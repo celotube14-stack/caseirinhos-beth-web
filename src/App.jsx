@@ -26,7 +26,7 @@ export default function App() {
   const [precisaTroco, setPrecisaTroco] = useState('');
   const [observacoes, setObservacoes] = useState('');
 
-  const NUMERO_WHATSAPP = "5511999999999"; 
+  const NUMERO_WHATSAPP = "5511996808580"; 
 
   // Verifica Horário de Funcionamento (08:00 às 21:00)
   useEffect(() => {
