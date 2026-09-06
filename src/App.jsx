@@ -141,18 +141,19 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Autenticação Admin via E-mail/Senha
+  // Autenticação Admin via E-mail/Senha com Diagnóstico Detalhado
   const handleLogin = async (e) => {
     e.preventDefault();
     setErroLogin('');
     try {
-      await signInWithEmailAndPassword(auth, email, senha);
+      await signInWithEmailAndPassword(auth, email.trim(), senha);
       setMostrarModalLogin(false);
       setSenha('');
       exibirToast("Login de Admin efetuado com sucesso!");
     } catch (error) {
-      console.error(error);
-      setErroLogin("E-mail ou senha incorretos.");
+      console.error("Erro original do Firebase:", error);
+      // Exibe o código de erro exato retornado pelo Firebase no modal
+      setErroLogin(`Erro (${error.code}): ${error.message}`);
     }
   };
 
@@ -455,7 +456,7 @@ export default function App() {
             </div>
 
             {erroLogin && (
-              <p className="text-xs bg-red-50 text-red-600 p-2 rounded-lg mb-3 border border-red-100 font-semibold">
+              <p className="text-xs bg-red-50 text-red-600 p-2.5 rounded-lg mb-3 border border-red-100 font-semibold break-words">
                 {erroLogin}
               </p>
             )}
