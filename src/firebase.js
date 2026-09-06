@@ -1,10 +1,10 @@
 import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC_9zXbG10tSKFtx0fI0ccdtoltDFFRT_c",
+  apiKey: "AIzaSyC_9zXbGl0tSKFtx0fI0ccdtoltDFFRT_c",
   authDomain: "caseirinhosdabeth-f8645.firebaseapp.com",
   projectId: "caseirinhosdabeth-f8645",
   storageBucket: "caseirinhosdabeth-f8645.firebasestorage.app",
@@ -13,8 +13,6 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-
-export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const googleProvider = new GoogleAuthProvider();
