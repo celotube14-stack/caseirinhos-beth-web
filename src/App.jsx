@@ -202,8 +202,9 @@ export default function App() {
     };
 
     try {
-      if (boloEditando) {
-        await updateDoc(doc(db, "bolos", boloEditando.id), dadosBolo);
+      if (boloEditando && boloEditando.id) {
+        const boloRef = doc(db, "bolos", boloEditando.id);
+        await updateDoc(boloRef, dadosBolo);
         exibirToast("Produto atualizado com sucesso!");
       } else {
         await addDoc(collection(db, "bolos"), dadosBolo);
@@ -211,17 +212,19 @@ export default function App() {
       }
       resetFormAdmin();
     } catch (error) {
-      console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar produto no banco.");
+      console.error("Erro detalhado ao salvar/editar:", error);
+      alert("Erro ao salvar produto no banco. Veja o console (F12) para detalhes.");
     }
   };
 
   const handleEditarBolo = (bolo) => {
+    console.log("Editando bolo ID:", bolo.id, bolo);
     setBoloEditando(bolo);
     setNomeForm(bolo.nome || bolo.Nome || "");
     setPrecoForm(bolo.preco !== undefined ? bolo.preco : (bolo.Preço || ""));
     setCategoriaForm(bolo.categoria || bolo.Categoria || "Bolos Tradicionais");
     setDescricaoForm(bolo.descricao || bolo.Descrição || "");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeletarBolo = async (id) => {
