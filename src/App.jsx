@@ -152,7 +152,6 @@ export default function App() {
       exibirToast("Login de Admin efetuado com sucesso!");
     } catch (error) {
       console.error("Erro original do Firebase:", error);
-      // Exibe o código de erro exato retornado pelo Firebase no modal
       setErroLogin(`Erro (${error.code}): ${error.message}`);
     }
   };
@@ -193,10 +192,12 @@ export default function App() {
 
     const dadosBolo = {
       nome: nomeForm,
+      Preço: parseFloat(precoForm),
       preco: parseFloat(precoForm),
       categoria: categoriaForm,
       descricao: descricaoForm,
       imageUrl: urlFinal,
+      Ativo: true,
       ativo: true
     };
 
@@ -217,10 +218,10 @@ export default function App() {
 
   const handleEditarBolo = (bolo) => {
     setBoloEditando(bolo);
-    setNomeForm(bolo.nome);
-    setPrecoForm(bolo.preco);
-    setCategoriaForm(bolo.categoria || "Bolos Tradicionais");
-    setDescricaoForm(bolo.descricao || "");
+    setNomeForm(bolo.nome || bolo.Nome || "");
+    setPrecoForm(bolo.preco !== undefined ? bolo.preco : (bolo.Preço || ""));
+    setCategoriaForm(bolo.categoria || bolo.Categoria || "Bolos Tradicionais");
+    setDescricaoForm(bolo.descricao || bolo.Descrição || "");
   };
 
   const handleDeletarBolo = async (id) => {
