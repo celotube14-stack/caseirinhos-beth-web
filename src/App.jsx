@@ -31,7 +31,7 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  // Formulário CRUD Admin
+  // CRUD Admin
   const [editingProduct, setEditingProduct] = useState(null);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -176,7 +176,7 @@ export default function App() {
   };
 
   const handleDeleteProduct = async (id) => {
-    if (window.confirm("Deseja excluir este produto?")) {
+    if (window.confirm("Deseja realmente excluir este produto?")) {
       await deleteDoc(doc(db, "products", id));
     }
   };
@@ -198,110 +198,312 @@ export default function App() {
   const isAdmin = user && user.email === "celotube14@gmail.com";
 
   return (
-    <div style={{ fontFamily: "sans-serif", padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-      {/* Botão sutil ou status do Admin */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
-        {isAdmin ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "14px" }}>Admin Logado</span>
-            <button onClick={handleLogout} style={{ padding: "4px 8px", cursor: "pointer" }}>Sair</button>
+    <div className="min-h-screen bg-amber-50/30">
+      {/* Header Bonito */}
+      <header className="bg-white border-b border-amber-100 shadow-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🍰</span>
+            <div>
+              <h1 className="text-xl font-bold text-amber-900">Caseirinhos da Beth</h1>
+              <p className="text-xs text-amber-600">Bolos e Doces Caseiros</p>
+            </div>
           </div>
-        ) : (
-          <button onClick={() => setShowLoginModal(true)} style={{ background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: "12px" }}>
-            🔒 Área Restrita
-          </button>
-        )}
-      </div>
 
-      {/* Modal / Popup de Login de sobreposição */}
+          <div>
+            {isAdmin ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-medium">
+                  Painel Admin ({user.email})
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="text-xs bg-red-500 hover:bg-red-600 text-white font-semibold px-3 py-1.5 rounded-lg transition"
+                >
+                  Sair
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="text-xs bg-amber-500 hover:bg-amber-600 text-white font-medium px-3 py-1.5 rounded-lg transition flex items-center gap-1.5"
+              >
+                <span>🔒</span> Área Restrita
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Modal de Login */}
       {showLoginModal && !isAdmin && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999 }}>
-          <div style={{ backgroundColor: "#fff", padding: "20px", borderRadius: "8px", width: "300px" }}>
-            <h3 style={{ marginTop: 0 }}>Login Admin</h3>
-            {loginError && <p style={{ color: "red", fontSize: "12px" }}>{loginError}</p>}
-            <form onSubmit={handleLogin}>
-              <div style={{ marginBottom: "10px" }}>
-                <label style={{ fontSize: "12px" }}>E-mail</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: "100%", padding: "6px", boxSizing: "border-box" }} />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-amber-900">Acesso Restrito</h3>
+              <button 
+                onClick={() => setShowLoginModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {loginError && (
+              <p className="text-xs bg-red-50 text-red-600 p-2.5 rounded-lg mb-3 border border-red-100">
+                {loginError}
+              </p>
+            )}
+
+            <form onSubmit={handleLogin} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">E-mail</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
               </div>
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ fontSize: "12px" }}>Senha</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: "100%", padding: "6px", boxSizing: "border-box" }} />
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Senha</label>
+                <input
+                  type="password"
+                  placeholder="Sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
               </div>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button type="submit" style={{ flex: 1, padding: "8px", cursor: "pointer" }}>Entrar</button>
-                <button type="button" onClick={() => setShowLoginModal(false)} style={{ padding: "8px", cursor: "pointer" }}>Fechar</button>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 rounded-lg text-sm transition"
+                >
+                  Entrar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLoginModal(false)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-4 py-2 rounded-lg text-sm transition"
+                >
+                  Cancelar
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Formulário Admin (Apenas exibe se estiver logado) */}
-      {isAdmin && (
-        <div style={{ background: "#f0f0f0", padding: "15px", borderRadius: "8px", marginBottom: "20px" }}>
-          <h3>{editingProduct ? "Editar Produto" : "Novo Produto"}</h3>
-          <form onSubmit={handleSubmitProduct} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <input type="text" placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} required />
-            <input type="number" step="0.01" placeholder="Preço" value={price} onChange={(e) => setPrice(e.target.value)} required />
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              {categories.filter(c => c !== "Todos").map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} />
-            <textarea placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} />
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button type="submit" disabled={uploading}>{uploading ? "Enviando..." : "Salvar"}</button>
-              {editingProduct && <button type="button" onClick={resetForm}>Cancelar</button>}
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* O LAYOUT CONTINUA INTACTO */}
-      <div style={{ display: "flex", gap: "20px" }}>
-        <div style={{ flex: 1 }}>
-          {/* Categorias */}
-          <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-            {categories.map((cat) => (
-              <button key={cat} onClick={() => setSelectedCategory(cat)} style={{ padding: "8px 12px", cursor: "pointer", fontWeight: selectedCategory === cat ? "bold" : "normal" }}>
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Cards de Produtos */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "15px" }}>
-            {filteredProducts.map((prod) => (
-              <div key={prod.id} style={{ border: "1px solid #ddd", padding: "10px", borderRadius: "8px" }}>
-                <img src={prod.imageUrl} alt={prod.name} style={{ width: "100%", height: "120px", objectFit: "cover" }} />
-                <h4>{prod.name}</h4>
-                <p style={{ fontSize: "12px", color: "#666" }}>{prod.description}</p>
-                <p style={{ fontWeight: "bold" }}>R$ {Number(prod.price).toFixed(2)}</p>
-                <button onClick={() => addToCart(prod)} style={{ width: "100%", padding: "6px", cursor: "pointer" }}>Adicionar</button>
-                {isAdmin && (
-                  <div style={{ display: "flex", gap: "5px", marginTop: "5px" }}>
-                    <button onClick={() => handleEditProduct(prod)} style={{ flex: 1, fontSize: "10px" }}>Editar</button>
-                    <button onClick={() => handleDeleteProduct(prod.id)} style={{ flex: 1, fontSize: "10px" }}>Excluir</button>
-                  </div>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Formulário Admin se logado */}
+        {isAdmin && (
+          <div className="bg-white border border-amber-200 rounded-2xl p-6 shadow-sm mb-8">
+            <h2 className="text-lg font-bold text-amber-900 mb-4">
+              {editingProduct ? "Editar Produto" : "Cadastrar Novo Produto"}
+            </h2>
+            <form onSubmit={handleSubmitProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Nome do Produto"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="text-sm p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+              />
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Preço (R$)"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+                className="text-sm p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+              />
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="text-sm p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none bg-white"
+              >
+                {categories.filter(c => c !== "Todos").map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files[0])}
+                className="text-sm p-2 border border-gray-200 rounded-lg"
+              />
+              <textarea
+                placeholder="Descrição do produto..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="md:col-span-2 text-sm p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none h-20"
+              />
+              <div className="md:col-span-2 flex gap-3">
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition"
+                >
+                  {uploading ? "Salvando..." : editingProduct ? "Atualizar Produto" : "Salvar Produto"}
+                </button>
+                {editingProduct && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-2.5 rounded-lg text-sm transition"
+                  >
+                    Cancelar
+                  </button>
                 )}
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Categorias */}
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition ${
+                selectedCategory === cat
+                  ? "bg-amber-600 text-white shadow-sm"
+                  : "bg-white text-gray-600 hover:bg-amber-50 border border-gray-100"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid de Produtos + Carrinho */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {filteredProducts.map((prod) => (
+              <div
+                key={prod.id}
+                className="bg-white rounded-2xl overflow-hidden border border-amber-100 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+              >
+                <div>
+                  <div className="h-44 overflow-hidden bg-gray-100 relative">
+                    <img
+                      src={prod.imageUrl}
+                      alt={prod.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold text-gray-800 text-base mb-1">{prod.name}</h3>
+                    <p className="text-xs text-gray-500 line-clamp-2 mb-3">{prod.description}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 pt-0">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-lg font-bold text-amber-700">
+                      R$ {Number(prod.price).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => addToCart(prod)}
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 rounded-xl text-sm transition"
+                  >
+                    + Adicionar
+                  </button>
+
+                  {isAdmin && (
+                    <div className="flex gap-2 mt-2 pt-2 border-t border-gray-100">
+                      <button
+                        onClick={() => handleEditProduct(prod)}
+                        className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold py-1 rounded text-xs transition"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProduct(prod.id)}
+                        className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 font-semibold py-1 rounded text-xs transition"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Carrinho Lateral */}
-        <div style={{ width: "280px", border: "1px solid #ddd", padding: "15px", borderRadius: "8px", height: "fit-content" }}>
-          <h3>Carrinho</h3>
-          {cart.map((item) => (
-            <div key={item.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px" }}>
-              <span>{item.quantity}x {item.name}</span>
-              <button onClick={() => removeFromCart(item.id)}>x</button>
+          {/* Carrinho Lateral */}
+          <div className="lg:col-span-1">
+            <div className="bg-white border border-amber-100 rounded-2xl p-5 shadow-sm sticky top-24">
+              <h2 className="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
+                <span>🛒</span> Seu Carrinho
+              </h2>
+
+              {cart.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-6">
+                  Seu carrinho está vazio.
+                </p>
+              ) : (
+                <div>
+                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1 mb-4">
+                    {cart.map((item) => (
+                      <div key={item.id} className="flex justify-between items-center text-xs pb-2 border-b border-gray-50">
+                        <div>
+                          <p className="font-semibold text-gray-800">{item.name}</p>
+                          <p className="text-amber-700 font-bold">R$ {(item.price * item.quantity).toFixed(2)}</p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateQuantity(item.id, -1)}
+                            className="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold"
+                          >
+                            -
+                          </button>
+                          <span className="font-bold text-gray-700">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, 1)}
+                            className="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold"
+                          >
+                            +
+                          </button>
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="text-red-400 hover:text-red-600 font-bold ml-1"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-3 mb-4 flex justify-between items-center">
+                    <span className="text-xs font-semibold text-gray-500">Total</span>
+                    <span className="text-lg font-bold text-amber-700">R$ {cartTotal.toFixed(2)}</span>
+                  </div>
+
+                  <button
+                    onClick={handleCheckout}
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm transition shadow-sm"
+                  >
+                    Finalizar no WhatsApp
+                  </button>
+                </div>
+              )}
             </div>
-          ))}
-          <p><strong>Total:</strong> R$ {cartTotal.toFixed(2)}</p>
-          <button onClick={handleCheckout} style={{ width: "100%", padding: "10px", cursor: "pointer" }}>Finalizar no WhatsApp</button>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
