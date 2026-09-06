@@ -1,673 +1,389 @@
-import React, { useState, useEffect } from 'react';
-import { db, auth, googleProvider, storage } from './firebase';
-import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc } from 'firebase/firestore';
-import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import React, { useState, useEffect } from "react";
+import { 
+  db, 
+  auth, 
+  storage 
+} from "./firebase";
+import { 
+  collection, 
+  onSnapshot, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc 
+} from "firebase/firestore";
+import { 
+  ref, 
+  uploadBytes, 
+  getDownloadURL 
+} from "firebase/storage";
+import { 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged 
+} from "firebase/auth";
 
 export default function App() {
-  const [bolos, setBolos] = useState([]);
-  const [carrinho, setCarrinho] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Estado de Produtos e Carrinho
+  const [products, setProducts] = useState([]);
+  const [cart, setCart] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("Todos");
 
-  // Filtros, Busca e Layout
-  const [categoriaAtiva, setCategoriaAtiva] = useState('Todas');
-  const [busca, setBusca] = useState('');
-  const [modoVisualizacao, setModoVisualizacao] = useState('grade');
+  // Estado de Autenticação Admin
+  const [user, setUser] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [email, setEmail] = useState("celotube14@gmail.com");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
 
-  // Status de Funcionamento
-  const [lojaAberta, setLojaAberta] = useState(true);
+  // Estado de Gerenciamento do CRUD (Formulário Admin)
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [category, setCategory] = useState("Bolos Tradicionais");
+  const [description, setDescription] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
-  // Toast Notificação
-  const [toastMsg, setToastMsg] = useState('');
+  // Categorias
+  const categories = ["Todos", "Bolos Tradicionais", "Bolos com Cobertura", "Bolos Especiais", "Salgados"];
 
-  // Checkout
-  const [nomeCliente, setNomeCliente] = useState('');
-  const [enderecoCliente, setEnderecoCliente] = useState('');
-  const [formaEntrega, setFormaEntrega] = useState('entrega');
-  const [formaPagamento, setFormaPagamento] = useState('Pix');
-  const [precisaTroco, setPrecisaTroco] = useState('');
-  const [observacoes, setObservacoes] = useState('');
-
-  // Modal PIX
-  const [mostrarModalPix, setMostrarModalPix] = useState(false);
-  const [chaveCopiada, setChaveCopiada] = useState(false);
-  const [tempoRestante, setTempoRestante] = useState(300);
-
-  // Autenticação & Painel Admin
-  const [usuario, setUsuario] = useState(null);
-  const [mostrarAdmin, setMostrarAdmin] = useState(false);
-  const [boloEditando, setBoloEditando] = useState(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
-
-  // Formulário de Edição / Criação de Bolo
-  const [formBolo, setFormBolo] = useState({
-    nome: '',
-    preco: '',
-    categoria: 'Bolos Tradicionais',
-    descricao: '',
-    imagemUrl: '',
-    ativo: true
-  });
-
-  const EMAIL_ADMIN = "celotube14@gmail.com";
-  const NUMERO_WHATSAPP = "5511996808580"; 
-  const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
-
-  // Monitora estado de Login no Firebase
+  // Observa Autenticação e Produtos do Firestore
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.email === EMAIL_ADMIN) {
-        setUsuario(user);
-      } else {
-        setUsuario(null);
-      }
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
     });
-    return () => unsubscribe();
-  }, []);
 
-  // Timer do PIX (5 Minutos)
-  useEffect(() => {
-    let timer;
-    if (mostrarModalPix && tempoRestante > 0) {
-      timer = setInterval(() => {
-        setTempoRestante((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [mostrarModalPix, tempoRestante]);
+    const unsubscribeSnapshot = onSnapshot(collection(db, "products"), (snapshot) => {
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setProducts(items);
+    });
 
-  // Horário de Funcionamento
-  useEffect(() => {
-    const checarHorario = () => {
-      const horaAtual = new Date().getHours();
-      setLojaAberta(horaAtual >= 8 && horaAtual < 21);
+    return () => {
+      unsubscribeAuth();
+      unsubscribeSnapshot();
     };
-    checarHorario();
-    const interval = setInterval(checarHorario, 60000);
-    return () => clearInterval(interval);
   }, []);
 
-  // Busca do Firestore em Tempo Real
-  useEffect(() => {
-    setLoading(true);
-    const bolosRef = collection(db, "bolos");
-
-    const unsubscribe = onSnapshot(
-      bolosRef,
-      (querySnapshot) => {
-        const listaBolos = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          listaBolos.push({
-            id: doc.id,
-            nome: data.Nome || data.nome || "Bolo sem nome",
-            preco: parseFloat(data.Preço || data.preco || data.Preco) || 0,
-            categoria: data.Categoria || data.categoria || "Geral",
-            descricao: data.Descrição || data.descricao || data.Descricao || "",
-            imagemUrl: data.imagemUrl || data.imagem || "",
-            ativo: data.Ativo !== undefined ? data.Ativo : (data.ativo !== undefined ? data.ativo : true),
-          });
-        });
-        setBolos(listaBolos);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Erro ao carregar cardápio:", error);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
-
-  // Funções de Autenticação
-  const fazerLoginGoogle = async () => {
+  // Login por E-mail e Senha
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError("");
     try {
-      const resultado = await signInWithPopup(auth, googleProvider);
-      if (resultado.user.email !== EMAIL_ADMIN) {
-        alert("Acesso negado. Este e-mail não tem permissão administrativa.");
-        await signOut(auth);
-      } else {
-        exibirToast("Bem-vindo de volta ao Painel!");
-      }
-    } catch (err) {
-      console.error("Erro ao fazer login:", err);
-      alert("Falha na autenticação via Google.");
+      await signInWithEmailAndPassword(auth, email, password);
+      setShowLoginModal(false);
+      setPassword("");
+    } catch (error) {
+      console.error("Erro ao fazer login:", error);
+      setLoginError("E-mail ou senha incorretos.");
     }
   };
 
-  const fazerLogout = () => {
-    signOut(auth);
-    setMostrarAdmin(false);
-    exibirToast("Sessão encerrada.");
+  // Logout
+  const handleLogout = async () => {
+    await signOut(auth);
   };
 
-  // Upload de Imagem para o Firebase Storage
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  // Funções do Carrinho
+  const addToCart = (product) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
 
-    setUploadingImage(true);
+  const removeFromCart = (id) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const updateQuantity = (id, delta) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          const newQty = item.quantity + delta;
+          return newQty > 0 ? { ...item, quantity: newQty } : item;
+        }
+        return item;
+      })
+    );
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+
+  // Enviar Pedido via WhatsApp
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+    let message = "*Novo Pedido - Caseirinhos da Beth*\n\n";
+    cart.forEach((item) => {
+      message += `• ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}\n`;
+    });
+    message += `\n*Total:* R$ ${cartTotal.toFixed(2)}`;
+    
+    const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
+  };
+
+  // Funções do Painel Admin (CRUD + Upload de Imagem)
+  const handleImageUpload = async (file) => {
+    if (!file) return imageUrl;
+    setUploading(true);
     try {
-      const storageRef = ref(storage, `bolos/${Date.now()}_${file.name}`);
+      const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
-      setFormBolo((prev) => ({ ...prev, imagemUrl: url }));
-      exibirToast("Foto enviada com sucesso!");
+      setUploading(false);
+      return url;
     } catch (error) {
-      console.error("Erro ao subir imagem:", error);
-      alert("Erro ao fazer upload da imagem.");
-    } finally {
-      setUploadingImage(false);
+      console.error("Erro no upload da imagem:", error);
+      setUploading(false);
+      return imageUrl;
     }
   };
 
-  // Salvar/Editar Bolo no Firestore
-  const salvarBolo = async (e) => {
+  const handleSubmitProduct = async (e) => {
     e.preventDefault();
-    if (!formBolo.nome || !formBolo.preco) {
-      alert("Nome e preço são obrigatórios!");
+    if (!name || !price) {
+      alert("Preencha o nome e o preço do produto.");
       return;
     }
 
-    const boloData = {
-      nome: formBolo.nome,
-      preco: parseFloat(formBolo.preco),
-      categoria: formBolo.categoria,
-      descricao: formBolo.descricao,
-      imagemUrl: formBolo.imagemUrl,
-      ativo: formBolo.ativo
+    let finalImageUrl = imageUrl;
+    if (imageFile) {
+      finalImageUrl = await handleImageUpload(imageFile);
+    }
+
+    const productData = {
+      name,
+      price: parseFloat(price),
+      category,
+      description,
+      imageUrl: finalImageUrl || "https://via.placeholder.com/150",
     };
 
     try {
-      if (boloEditando) {
-        await updateDoc(doc(db, "bolos", boloEditando.id), boloData);
-        exibirToast("Bolo atualizado com sucesso!");
+      if (editingProduct) {
+        await updateDoc(doc(db, "products", editingProduct.id), productData);
+        alert("Produto atualizado com sucesso!");
       } else {
-        await addDoc(collection(db, "bolos"), boloData);
-        exibirToast("Novo bolo cadastrado!");
+        await addDoc(collection(db, "products"), productData);
+        alert("Produto cadastrado com sucesso!");
       }
-
-      limparFormularioAdmin();
+      resetForm();
     } catch (error) {
-      console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar o produto.");
+      console.error("Erro ao salvar produto:", error);
+      alert("Erro ao salvar produto.");
     }
   };
 
-  const prepararEdicao = (bolo) => {
-    setBoloEditando(bolo);
-    setFormBolo({
-      nome: bolo.nome,
-      preco: bolo.preco,
-      categoria: bolo.categoria,
-      descricao: bolo.descricao,
-      imagemUrl: bolo.imagemUrl || '',
-      ativo: bolo.ativo
-    });
+  const handleEditProduct = (prod) => {
+    setEditingProduct(prod);
+    setName(prod.name);
+    setPrice(prod.price);
+    setCategory(prod.category || "Bolos Tradicionais");
+    setDescription(prod.description || "");
+    setImageUrl(prod.imageUrl || "");
   };
 
-  const deletarBolo = async (id) => {
-    if (window.confirm("Deseja realmente apagar este bolo do cardápio?")) {
+  const handleDeleteProduct = async (id) => {
+    if (window.confirm("Deseja realmente excluir este produto?")) {
       try {
-        await deleteDoc(doc(db, "bolos", id));
-        exibirToast("Bolo removido!");
-      } catch (err) {
-        console.error("Erro ao deletar:", err);
+        await deleteDoc(doc(db, "products", id));
+      } catch (error) {
+        console.error("Erro ao deletar produto:", error);
       }
     }
   };
 
-  const limparFormularioAdmin = () => {
-    setBoloEditando(null);
-    setFormBolo({
-      nome: '',
-      preco: '',
-      categoria: 'Bolos Tradicionais',
-      descricao: '',
-      imagemUrl: '',
-      ativo: true
-    });
+  const resetForm = () => {
+    setEditingProduct(null);
+    setName("");
+    setPrice("");
+    setCategory("Bolos Tradicionais");
+    setDescription("");
+    setImageFile(null);
+    setImageUrl("");
   };
 
-  const formatarTempo = (seg) => {
-    const m = Math.floor(seg / 60);
-    const s = seg % 60;
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  };
+  const filteredProducts = selectedCategory === "Todos" 
+    ? products 
+    : products.filter(p => p.category === selectedCategory);
 
-  const exibirToast = (mensagem) => {
-    setToastMsg(mensagem);
-    setTimeout(() => setToastMsg(''), 3000);
-  };
-
-  const adicionarAoCarrinho = (bolo) => {
-    setCarrinho((prev) => {
-      const itemExistente = prev.find((item) => item.id === bolo.id);
-      if (itemExistente) {
-        return prev.map((item) =>
-          item.id === bolo.id ? { ...item, quantidade: item.quantidade + 1 } : item
-        );
-      }
-      return [...prev, { ...bolo, quantidade: 1 }];
-    });
-    exibirToast(`" ${bolo.nome} " adicionado ao pedido!`);
-  };
-
-  const alterarQuantidade = (id, delta) => {
-    setCarrinho((prev) =>
-      prev
-        .map((item) => {
-          if (item.id === id) {
-            const novaQtd = item.quantidade + delta;
-            return novaQtd > 0 ? { ...item, quantidade: novaQtd } : null;
-          }
-          return item;
-        })
-        .filter(Boolean)
-    );
-  };
-
-  const calcularTotal = () => carrinho.reduce((acc, curr) => acc + curr.preco * curr.quantidade, 0);
-  const totalItensCarrinho = carrinho.reduce((acc, curr) => acc + curr.quantidade, 0);
-
-  const bolosFiltrados = bolos.filter((b) => {
-    if (!b.ativo && !usuario) return false;
-    const atendeCategoria = categoriaAtiva === 'Todas' || b.categoria.toLowerCase() === categoriaAtiva.toLowerCase();
-    const atendeBusca = b.nome.toLowerCase().includes(busca.toLowerCase()) || b.descricao.toLowerCase().includes(busca.toLowerCase());
-    return atendeCategoria && atendeBusca;
-  });
-
-  const processarCheckout = () => {
-    if (!nomeCliente.trim()) return alert("Digite seu nome.");
-    if (formaEntrega === 'entrega' && !enderecoCliente.trim()) return alert("Digite o endereço de entrega.");
-
-    if (formaPagamento === 'Pix') {
-      setTempoRestante(300);
-      setMostrarModalPix(true);
-    } else {
-      enviarPedidoWhatsApp();
-    }
-  };
-
-  const copiarChavePix = () => {
-    navigator.clipboard.writeText(CHAVE_PIX);
-    setChaveCopiada(true);
-    setTimeout(() => setChaveCopiada(false), 3000);
-  };
-
-  const enviarPedidoWhatsApp = () => {
-    let mensagem = `*Novo Pedido - Caseirinhos da Beth*\n\n`;
-    mensagem += `*Cliente:* ${nomeCliente}\n`;
-    mensagem += `*Forma:* ${formaEntrega === 'entrega' ? 'Entrega' : 'Retirada no local'}\n`;
-    if (formaEntrega === 'entrega') mensagem += `*Endereço:* ${enderecoCliente}\n`;
-    
-    mensagem += `\n*Itens do Pedido:*\n`;
-    carrinho.forEach((item) => {
-      mensagem += `• ${item.quantidade}x ${item.nome} (R$ ${(item.preco * item.quantidade).toFixed(2).replace('.', ',')})\n`;
-    });
-
-    mensagem += `\n*Total:* R$ ${calcularTotal().toFixed(2).replace('.', ',')}\n`;
-    mensagem += `*Pagamento:* ${formaPagamento}\n`;
-    if (formaPagamento === 'Pix') mensagem += `_Pagamento realizado via PIX antecipado_\n`;
-    if (formaPagamento === 'Dinheiro' && precisaTroco.trim()) mensagem += `*Troco para:* R$ ${precisaTroco}\n`;
-    if (observacoes.trim()) mensagem += `\n*Observações:* ${observacoes}\n`;
-
-    window.open(`https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(mensagem)}`, '_blank');
-    setMostrarModalPix(false);
-  };
-
-  const categorias = ["Todas", "Bolos Tradicionais", "Bolos Especiais", "Bolos com Cobertura"];
+  const isAdmin = user && user.email === "celotube14@gmail.com";
 
   return (
-    <div className="min-h-screen bg-pink-50 font-sans pb-24 md:pb-12 relative">
-      
-      {toastMsg && (
-        <div className="fixed top-5 right-5 z-50 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-xl border border-gray-700 animate-bounce">
-          ✨ {toastMsg}
-        </div>
-      )}
-
-      {/* Header */}
-      <header className="bg-amber-50/80 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative">
-        <div className="max-w-md mx-auto flex flex-col items-center justify-center">
-          <h1 className="text-5xl md:text-6xl font-normal leading-tight" style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}>
-            Caseirinhos
-          </h1>
-          <span className="text-5xl md:text-6xl text-rose-700 -mt-3" style={{ fontFamily: "'Pacifico', cursive" }}>
-            da Beth
-          </span>
-          <p className="mt-2 text-pink-900/80 text-sm font-semibold">Bolos Caseiros e Especiais | Feitos com amor</p>
-          
-          <span className={`inline-flex items-center gap-2 mt-3 text-xs font-bold px-4 py-1 rounded-full border ${
-            lojaAberta ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'
-          }`}>
-            <span className={`w-2 h-2 rounded-full ${lojaAberta ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-            {lojaAberta ? 'Aberto Agora (08:00 às 21:00)' : 'Fechado no momento'}
-          </span>
+    <div style={{ fontFamily: "Arial, sans-serif", backgroundColor: "#f9fafb", minHeight: "100vh", padding: "20px" }}>
+      {/* Cabeçalho */}
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", padding: "15px 30px", borderRadius: "10px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", marginBottom: "20px" }}>
+        <h1 style={{ color: "#d97706", margin: 0 }}>🍰 Caseirinhos da Beth</h1>
+        <div>
+          {user ? (
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <span style={{ fontSize: "14px", color: "#4b5563" }}>Admin: {user.email}</span>
+              <button onClick={handleLogout} style={{ padding: "8px 12px", backgroundColor: "#ef4444", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" }}>Sair</button>
+            </div>
+          ) : (
+            <button onClick={() => setShowLoginModal(true)} style={{ padding: "8px 12px", backgroundColor: "#d97706", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" }}>
+              🔒 Área Restrita
+            </button>
+          )}
         </div>
       </header>
 
-      {/* Conteúdo Principal */}
-      <main className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        <section className="md:col-span-2">
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="🔍 Buscar por sabor..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-pink-200 text-sm bg-white shadow-sm"
-            />
-          </div>
-
-          <div className="mb-6 flex flex-wrap justify-between gap-2">
-            <div className="flex flex-wrap gap-2">
-              {categorias.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setCategoriaAtiva(cat)}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
-                    categoriaAtiva.toLowerCase() === cat.toLowerCase()
-                      ? 'bg-pink-600 text-white shadow'
-                      : 'bg-white text-pink-600 border border-pink-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Nosso Cardápio</h2>
-          
-          {loading ? (
-            <p className="text-gray-500">Carregando cardápio...</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {bolosFiltrados.map((bolo) => (
-                <div key={bolo.id} className="bg-white rounded-xl shadow overflow-hidden border border-pink-100 flex flex-col justify-between">
-                  {bolo.imagemUrl && (
-                    <img src={bolo.imagemUrl} alt={bolo.nome} className="w-full h-40 object-cover" />
-                  )}
-                  <div className="p-4 flex-1">
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-lg font-bold text-gray-800">{bolo.nome}</h3>
-                      <span className="text-xs bg-pink-100 text-pink-600 font-semibold px-2 py-0.5 rounded-full">
-                        {bolo.categoria}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">{bolo.descricao}</p>
-                  </div>
-
-                  <div className="p-4 pt-0 flex items-center justify-between border-t border-gray-50 mt-2">
-                    <span className="text-base font-bold text-pink-600">
-                      R$ {bolo.preco.toFixed(2).replace('.', ',')}
-                    </span>
-                    
-                    {usuario && mostrarAdmin ? (
-                      <div className="flex gap-2">
-                        <button onClick={() => prepararEdicao(bolo)} className="text-xs bg-amber-500 text-white px-2 py-1 rounded">
-                          ✏️ Editar
-                        </button>
-                        <button onClick={() => deletarBolo(bolo.id)} className="text-xs bg-rose-600 text-white px-2 py-1 rounded">
-                          🗑️
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => adicionarAoCarrinho(bolo)}
-                        className="bg-pink-500 hover:bg-pink-600 text-white font-medium text-xs px-3 py-2 rounded-lg"
-                      >
-                        + Adicionar
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Carrinho de Compras */}
-        <aside className="bg-white rounded-xl shadow p-6 border border-pink-100 h-fit sticky top-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b">Seu Pedido</h2>
-          
-          {carrinho.length === 0 ? (
-            <p className="text-gray-400 text-center py-6">Carrinho vazio.</p>
-          ) : (
-            <div className="space-y-4">
-              <div className="max-h-48 overflow-y-auto space-y-2">
-                {carrinho.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center text-sm border-b pb-2">
-                    <div>
-                      <p className="font-medium">{item.nome}</p>
-                      <p className="text-pink-600 font-bold">R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}</p>
-                    </div>
-                    <div className="flex gap-2 items-center bg-pink-50 px-2 py-1 rounded">
-                      <button onClick={() => alterarQuantidade(item.id, -1)} className="font-bold">-</button>
-                      <span>{item.quantidade}</span>
-                      <button onClick={() => alterarQuantidade(item.id, 1)} className="font-bold">+</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-2 border-t flex justify-between font-bold text-lg">
-                <span>Total:</span>
-                <span className="text-pink-600">R$ {calcularTotal().toFixed(2).replace('.', ',')}</span>
-              </div>
-
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="Seu Nome *"
-                  value={nomeCliente}
-                  onChange={(e) => setNomeCliente(e.target.value)}
-                  className="w-full p-2 border rounded text-sm"
-                />
-                <select
-                  value={formaEntrega}
-                  onChange={(e) => setFormaEntrega(e.target.value)}
-                  className="w-full p-2 border rounded text-sm"
-                >
-                  <option value="entrega">Entrega</option>
-                  <option value="retirada">Retirar no local</option>
-                </select>
-
-                {formaEntrega === 'entrega' && (
-                  <textarea
-                    placeholder="Endereço Completo *"
-                    value={enderecoCliente}
-                    onChange={(e) => setEnderecoCliente(e.target.value)}
-                    className="w-full p-2 border rounded text-sm"
-                    rows={2}
-                  />
-                )}
-
-                <select
-                  value={formaPagamento}
-                  onChange={(e) => setFormaPagamento(e.target.value)}
-                  className="w-full p-2 border rounded text-sm"
-                >
-                  <option value="Pix">Pix (Antecipado)</option>
-                  <option value="Cartão de Crédito">Cartão de Crédito</option>
-                  <option value="Cartão de Débito">Cartão de Débito</option>
-                  <option value="Dinheiro">Dinheiro</option>
-                </select>
-
-                <button
-                  onClick={processarCheckout}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl"
-                >
-                  {formaPagamento === 'Pix' ? 'Pagar via PIX e Finalizar' : 'Enviar no WhatsApp'}
-                </button>
-              </div>
-            </div>
-          )}
-        </aside>
-
-      </main>
-
-      {/* Modal Admin (Exclusivo para Beth - celotube14@gmail.com) */}
-      {mostrarAdmin && usuario && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl my-8">
-            <div className="flex justify-between items-center pb-3 border-b">
-              <h3 className="text-xl font-bold text-gray-800">
-                {boloEditando ? '✏️ Editar Bolo' : '➕ Novo Bolo'}
-              </h3>
-              <button onClick={() => setMostrarAdmin(false)} className="text-gray-400 font-bold">✕</button>
-            </div>
-
-            <form onSubmit={salvarBolo} className="mt-4 space-y-3">
-              <div>
-                <label className="block text-xs font-semibold mb-1">Nome do Bolo</label>
-                <input
-                  type="text"
-                  value={formBolo.nome}
-                  onChange={(e) => setFormBolo({ ...formBolo, nome: e.target.value })}
-                  className="w-full p-2 border rounded text-sm"
-                  required
+      {/* Modal de Login */}
+      {showLoginModal && !user && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+          <div style={{ backgroundColor: "#fff", padding: "30px", borderRadius: "8px", width: "320px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, color: "#d97706" }}>Login Administrativo</h3>
+            {loginError && <p style={{ color: "red", fontSize: "14px" }}>{loginError}</p>}
+            <form onSubmit={handleLogin}>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "14px", marginBottom: "4px" }}>E-mail:</label>
+                <input 
+                  type="email" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  required 
+                  style={{ width: "100%", padding: "8px", boxSizing: "border-box" }} 
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold mb-1">Preço (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formBolo.preco}
-                    onChange={(e) => setFormBolo({ ...formBolo, preco: e.target.value })}
-                    className="w-full p-2 border rounded text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1">Categoria</label>
-                  <select
-                    value={formBolo.categoria}
-                    onChange={(e) => setFormBolo({ ...formBolo, categoria: e.target.value })}
-                    className="w-full p-2 border rounded text-sm"
-                  >
-                    <option value="Bolos Tradicionais">Bolos Tradicionais</option>
-                    <option value="Bolos Especiais">Bolos Especiais</option>
-                    <option value="Bolos com Cobertura">Bolos com Cobertura</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Descrição</label>
-                <textarea
-                  value={formBolo.descricao}
-                  onChange={(e) => setFormBolo({ ...formBolo, descricao: e.target.value })}
-                  className="w-full p-2 border rounded text-sm"
-                  rows={2}
+              <div style={{ marginBottom: "18px" }}>
+                <label style={{ display: "block", fontSize: "14px", marginBottom: "4px" }}>Senha:</label>
+                <input 
+                  type="password" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  placeholder="Sua senha do Firebase"
+                  required 
+                  style={{ width: "100%", padding: "8px", boxSizing: "border-box" }} 
                 />
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1">Foto do Bolo (Upload Direto)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="w-full text-xs"
-                />
-                {uploadingImage && <p className="text-xs text-amber-600 mt-1">Enviando imagem...</p>}
-                {formBolo.imagemUrl && (
-                  <img src={formBolo.imagemUrl} alt="Preview" className="w-20 h-20 object-cover mt-2 rounded border" />
-                )}
-              </div>
-
-              <div className="flex gap-2 pt-3 border-t">
-                <button
-                  type="submit"
-                  disabled={uploadingImage}
-                  className="flex-1 bg-pink-600 text-white font-bold py-2 rounded text-sm"
-                >
-                  {boloEditando ? 'Salvar Alterações' : 'Cadastrar Bolo'}
-                </button>
-                {boloEditando && (
-                  <button
-                    type="button"
-                    onClick={limparFormularioAdmin}
-                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm"
-                  >
-                    Cancelar
-                  </button>
-                )}
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button type="submit" style={{ flex: 1, padding: "10px", backgroundColor: "#d97706", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}>Entrar</button>
+                <button type="button" onClick={() => setShowLoginModal(false)} style={{ padding: "10px", backgroundColor: "#9ca3af", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}>Cancelar</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Rodapé com Acesso Administrativo */}
-      <footer className="mt-12 text-center text-xs text-gray-400 border-t pt-6">
-        {usuario ? (
-          <div className="flex justify-center items-center gap-4">
-            <span className="text-emerald-600 font-bold">🟢 Logado como {usuario.email}</span>
-            <button
-              onClick={() => setMostrarAdmin(true)}
-              className="bg-pink-600 text-white font-bold px-3 py-1 rounded"
-            >
-              Painel de Gestão
-            </button>
-            <button onClick={fazerLogout} className="text-rose-600 underline">Sair</button>
-          </div>
-        ) : (
-          <button onClick={fazerLoginGoogle} className="hover:underline opacity-60">
-            🔒 Área Restrita (Login Admin)
-          </button>
-        )}
-      </footer>
-
-      {/* Modal PIX com Timer */}
-      {mostrarModalPix && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center">
-            <h3 className="text-xl font-bold">Pagamento via PIX</h3>
-            
-            <p className="text-sm my-2 text-rose-600 font-bold">
-              ⏰ Tempo para pagar: {formatarTempo(tempoRestante)}
-            </p>
-
-            <img 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(CHAVE_PIX)}`}
-              alt="QR Code"
-              className="mx-auto my-3 border p-2 rounded"
-            />
-
-            <button
-              onClick={copiarChavePix}
-              className="w-full bg-pink-100 text-pink-700 font-bold py-2 rounded mb-3 text-sm"
-            >
-              {chaveCopiada ? '✅ Chave Copiada!' : '📋 Copiar Chave PIX'}
-            </button>
-
-            {tempoRestante > 0 ? (
-              <button
-                onClick={enviarPedidoWhatsApp}
-                className="w-full bg-green-500 text-white font-bold py-3 rounded-xl"
-              >
-                Enviar Pedido no WhatsApp
+      {/* Painel Administrativo (Exibido apenas para Admin Logado) */}
+      {isAdmin && (
+        <section style={{ backgroundColor: "#fff", padding: "20px", borderRadius: "10px", marginBottom: "30px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+          <h2 style={{ color: "#374151", marginTop: 0 }}>{editingProduct ? "Editar Produto" : "Cadastrar Novo Produto"}</h2>
+          <form onSubmit={handleSubmitProduct} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+            <input type="text" placeholder="Nome do Produto" value={name} onChange={(e) => setName(e.target.value)} required style={{ padding: "10px" }} />
+            <input type="number" step="0.01" placeholder="Preço (R$)" value={price} onChange={(e) => setPrice(e.target.value)} required style={{ padding: "10px" }} />
+            <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ padding: "10px" }}>
+              {categories.filter(c => c !== "Todos").map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} style={{ padding: "10px" }} />
+            <textarea placeholder="Descrição do produto" value={description} onChange={(e) => setDescription(e.target.value)} style={{ gridColumn: "span 2", padding: "10px", height: "60px" }} />
+            <div style={{ gridColumn: "span 2", display: "flex", gap: "10px" }}>
+              <button type="submit" disabled={uploading} style={{ padding: "10px 20px", backgroundColor: "#10b981", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" }}>
+                {uploading ? "Salvando..." : editingProduct ? "Atualizar Produto" : "Salvar Produto"}
               </button>
-            ) : (
-              <button
-                onClick={() => setTempoRestante(300)}
-                className="w-full bg-pink-600 text-white font-bold py-3 rounded-xl"
-              >
-                🔄 Reiniciar Tempo
-              </button>
-            )}
-          </div>
-        </div>
+              {editingProduct && (
+                <button type="button" onClick={resetForm} style={{ padding: "10px 20px", backgroundColor: "#6b7280", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" }}>
+                  Cancelar Edição
+                </button>
+              )}
+            </div>
+          </form>
+        </section>
       )}
 
+      {/* Filtros de Categoria */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", overflowX: "auto" }}>
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "20px",
+              border: "none",
+              backgroundColor: selectedCategory === cat ? "#d97706" : "#e5e7eb",
+              color: selectedCategory === cat ? "#fff" : "#374151",
+              cursor: "pointer",
+              fontWeight: "bold"
+            }}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Grid Principal: Produtos e Carrinho */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "20px" }}>
+        {/* Lista de Produtos */}
+        <main style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "20px" }}>
+          {filteredProducts.map((prod) => (
+            <div key={prod.id} style={{ backgroundColor: "#fff", borderRadius: "8px", padding: "15px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div>
+                <img src={prod.imageUrl} alt={prod.name} style={{ width: "100%", height: "140px", objectFit: "cover", borderRadius: "6px" }} />
+                <h3 style={{ margin: "10px 0 5px 0", fontSize: "16px" }}>{prod.name}</h3>
+                <p style={{ fontSize: "12px", color: "#6b7280", margin: "0 0 10px 0" }}>{prod.description}</p>
+              </div>
+              <div>
+                <span style={{ fontSize: "18px", fontWeight: "bold", color: "#d97706", display: "block", marginBottom: "10px" }}>
+                  R$ {Number(prod.price).toFixed(2)}
+                </span>
+                <button onClick={() => addToCart(prod)} style={{ width: "100%", padding: "8px", backgroundColor: "#f59e0b", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" }}>
+                  + Adicionar
+                </button>
+                {isAdmin && (
+                  <div style={{ display: "flex", gap: "5px", marginTop: "8px" }}>
+                    <button onClick={() => handleEditProduct(prod)} style={{ flex: 1, padding: "5px", backgroundColor: "#3b82f6", color: "#fff", border: "none", borderRadius: "3px", cursor: "pointer", fontSize: "12px" }}>Editar</button>
+                    <button onClick={() => handleDeleteProduct(prod.id)} style={{ flex: 1, padding: "5px", backgroundColor: "#ef4444", color: "#fff", border: "none", borderRadius: "3px", cursor: "pointer", fontSize: "12px" }}>Excluir</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </main>
+
+        {/* Carrinho de Compras */}
+        <aside style={{ backgroundColor: "#fff", padding: "20px", borderRadius: "10px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", height: "fit-content" }}>
+          <h2 style={{ marginTop: 0, fontSize: "18px", color: "#374151" }}>🛒 Seu Carrinho</h2>
+          {cart.length === 0 ? (
+            <p style={{ color: "#9ca3af", fontSize: "14px" }}>Seu carrinho está vazio.</p>
+          ) : (
+            <div>
+              {cart.map((item) => (
+                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", borderBottom: "1fr solid #f3f4f6", paddingBottom: "8px" }}>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: "bold" }}>{item.name}</div>
+                    <div style={{ fontSize: "12px", color: "#6b7280" }}>R$ {(item.price * item.quantity).toFixed(2)}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                    <button onClick={() => updateQuantity(item.id, -1)} style={{ padding: "2px 6px" }}>-</button>
+                    <span style={{ fontSize: "14px" }}>{item.quantity}</span>
+                    <button onClick={() => updateQuantity(item.id, 1)} style={{ padding: "2px 6px" }}>+</button>
+                    <button onClick={() => removeFromCart(item.id)} style={{ padding: "2px 6px", color: "red", border: "none", background: "none", cursor: "pointer" }}>✕</button>
+                  </div>
+                </div>
+              ))}
+              <hr style={{ margin: "15px 0" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: "bold", marginBottom: "15px" }}>
+                <span>Total:</span>
+                <span style={{ color: "#d97706" }}>R$ {cartTotal.toFixed(2)}</span>
+              </div>
+              <button onClick={handleCheckout} style={{ width: "100%", padding: "12px", backgroundColor: "#22c55e", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "16px" }}>
+                Enviar Pedido pelo WhatsApp
+              </button>
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }
