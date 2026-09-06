@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 export default function App() {
   const [bolos, setBolos] = useState([]);
@@ -39,11 +39,15 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Busca do Firestore
+  // Busca do Firestore EM TEMPO REAL (onSnapshot)
   useEffect(() => {
-    const buscarBolos = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "bolos"));
+    setLoading(true);
+    const bolosRef = collection(db, "bolos");
+
+    // Escuta em tempo real: se deletar ou editar no Firebase, atualiza a tela na hora
+    const unsubscribe = onSnapshot(
+      bolosRef,
+      (querySnapshot) => {
         const listaBolos = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
@@ -57,14 +61,16 @@ export default function App() {
           });
         });
         setBolos(listaBolos);
-      } catch (error) {
-        console.error("Erro ao buscar cardápio:", error);
-      } finally {
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Erro ao escutar alterações do cardápio:", error);
         setLoading(false);
       }
-    };
+    );
 
-    buscarBolos();
+    // Desconecta o ouvinte ao desmontar o componente
+    return () => unsubscribe();
   }, []);
 
   const exibirToast = (mensagem) => {
