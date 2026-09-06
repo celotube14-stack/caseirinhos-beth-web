@@ -7,7 +7,7 @@ export default function App() {
   const [carrinho, setCarrinho] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filtros, Busca e Layout de Visualização ('grade' ou 'lista')
+  // Filtros, Busca e Layout de Visualização
   const [categoriaAtiva, setCategoriaAtiva] = useState('Todas');
   const [busca, setBusca] = useState('');
   const [modoVisualizacao, setModoVisualizacao] = useState('grade');
@@ -26,7 +26,12 @@ export default function App() {
   const [precisaTroco, setPrecisaTroco] = useState('');
   const [observacoes, setObservacoes] = useState('');
 
+  // Modal do PIX
+  const [mostrarModalPix, setMostrarModalPix] = useState(false);
+  const [chaveCopiada, setChaveCopiada] = useState(false);
+
   const NUMERO_WHATSAPP = "5511996808580"; 
+  const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
 
   // Verifica Horário de Funcionamento (08:00 às 21:00)
   useEffect(() => {
@@ -44,7 +49,6 @@ export default function App() {
     setLoading(true);
     const bolosRef = collection(db, "bolos");
 
-    // Escuta em tempo real: se deletar ou editar no Firebase, atualiza a tela na hora
     const unsubscribe = onSnapshot(
       bolosRef,
       (querySnapshot) => {
@@ -69,7 +73,6 @@ export default function App() {
       }
     );
 
-    // Desconecta o ouvinte ao desmontar o componente
     return () => unsubscribe();
   }, []);
 
@@ -123,17 +126,35 @@ export default function App() {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const enviarPedidoWhatsApp = () => {
+  const validarFormulario = () => {
     if (!nomeCliente.trim()) {
       alert("Por favor, digite seu nome antes de enviar o pedido.");
-      return;
+      return false;
     }
-
     if (formaEntrega === 'entrega' && !enderecoCliente.trim()) {
       alert("Por favor, digite seu endereço de entrega.");
-      return;
+      return false;
     }
+    return true;
+  };
 
+  const processarCheckout = () => {
+    if (!validarFormulario()) return;
+
+    if (formaPagamento === 'Pix') {
+      setMostrarModalPix(true);
+    } else {
+      enviarPedidoWhatsApp();
+    }
+  };
+
+  const copiarChavePix = () => {
+    navigator.clipboard.writeText(CHAVE_PIX);
+    setChaveCopiada(true);
+    setTimeout(() => setChaveCopiada(false), 3000);
+  };
+
+  const enviarPedidoWhatsApp = () => {
     let mensagem = `*Novo Pedido - Caseirinhos da Beth*\n\n`;
     mensagem += `*Cliente:* ${nomeCliente}\n`;
     mensagem += `*Forma:* ${formaEntrega === 'entrega' ? 'Entrega' : 'Retirada no local'}\n`;
@@ -150,6 +171,10 @@ export default function App() {
     mensagem += `\n*Total:* R$ ${calcularTotal().toFixed(2).replace('.', ',')}\n`;
     mensagem += `*Pagamento:* ${formaPagamento}\n`;
     
+    if (formaPagamento === 'Pix') {
+      mensagem += `_Pagamento realizado via PIX antecipado (Comprovante em anexo)_\n`;
+    }
+
     if (formaPagamento === 'Dinheiro' && precisaTroco.trim()) {
       mensagem += `*Troco para:* R$ ${precisaTroco}\n`;
     }
@@ -160,6 +185,7 @@ export default function App() {
 
     const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(mensagem)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
+    setMostrarModalPix(false);
   };
 
   const categorias = ["Todas", "Bolos Tradicionais", "Bolos Especiais", "Bolos com Cobertura"];
@@ -178,7 +204,6 @@ export default function App() {
       <header className="bg-amber-50/80 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
         <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
           
-          {/* Coração Superior */}
           <div className="flex items-center gap-2 mb-1 text-rose-700 opacity-90">
             <span className="h-[1.5px] w-8 bg-rose-600 rounded-full"></span>
             <svg className="w-5 h-5 fill-rose-600" viewBox="0 0 24 24">
@@ -187,7 +212,6 @@ export default function App() {
             <span className="h-[1.5px] w-8 bg-rose-600 rounded-full"></span>
           </div>
 
-          {/* Título Principal */}
           <h1 
             className="text-5xl md:text-6xl font-normal leading-tight tracking-wide drop-shadow-sm select-none"
             style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}
@@ -209,18 +233,15 @@ export default function App() {
               Beth
             </span>
 
-            {/* Coração Desenhado */}
             <svg className="w-8 h-8 text-rose-600 inline-block ml-1 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </div>
 
-          {/* Subtítulo */}
           <p className="mt-3 text-pink-900/80 text-sm md:text-base font-semibold tracking-wider">
             Bolos Caseiros e Especiais | Feitos com amor
           </p>
 
-          {/* Status Dinâmico */}
           <span className={`inline-flex items-center gap-2 mt-4 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
             lojaAberta 
               ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
@@ -238,7 +259,6 @@ export default function App() {
         {/* Seção Principal */}
         <section className="md:col-span-2">
           
-          {/* Busca por Nome */}
           <div className="mb-4">
             <input
               type="text"
@@ -249,7 +269,6 @@ export default function App() {
             />
           </div>
 
-          {/* Categorias + Alternador de Visualização */}
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
               {categorias.map((cat) => (
@@ -267,7 +286,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Botão de Alternar Layout */}
             <div className="bg-white p-1 rounded-xl border border-pink-200 flex items-center gap-1 shadow-sm">
               <button
                 onClick={() => setModoVisualizacao('grade')}
@@ -308,7 +326,6 @@ export default function App() {
             <p className="text-gray-500">Nenhum bolo encontrado para essa pesquisa.</p>
           ) : modoVisualizacao === 'grade' ? (
             
-            /* VISUALIZAÇÃO EM GRADE (CARDS) */
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {bolosFiltrados.map((bolo) => (
                 <div key={bolo.id} className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition">
@@ -342,7 +359,6 @@ export default function App() {
 
           ) : (
 
-            /* VISUALIZAÇÃO EM LISTA ENXUTA */
             <div className="bg-white rounded-xl shadow border border-pink-100 divide-y divide-gray-100">
               {bolosFiltrados.map((bolo) => (
                 <div key={bolo.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-pink-50/50 transition">
@@ -465,7 +481,7 @@ export default function App() {
                     onChange={(e) => setFormaPagamento(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
                   >
-                    <option value="Pix">Pix</option>
+                    <option value="Pix">Pix (Pagamento Antecipado)</option>
                     <option value="Cartão de Crédito">Cartão de Crédito</option>
                     <option value="Cartão de Débito">Cartão de Débito</option>
                     <option value="Dinheiro">Dinheiro</option>
@@ -497,13 +513,13 @@ export default function App() {
                 </div>
 
                 <button
-                  onClick={enviarPedidoWhatsApp}
+                  onClick={processarCheckout}
                   className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-sm active:scale-95"
                 >
                   <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                     <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
                   </svg>
-                  Enviar Pedido no WhatsApp
+                  {formaPagamento === 'Pix' ? 'Pagar via PIX e Finalizar' : 'Enviar Pedido no WhatsApp'}
                 </button>
               </div>
             </div>
@@ -511,6 +527,65 @@ export default function App() {
         </aside>
 
       </main>
+
+      {/* Modal / Janela Flutuante do PIX */}
+      {mostrarModalPix && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-pink-100 animate-fadeIn">
+            <div className="flex justify-between items-center pb-3 border-b">
+              <h3 className="text-xl font-bold text-gray-800">Pagamento via PIX</h3>
+              <button 
+                onClick={() => setMostrarModalPix(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="my-4 text-center">
+              <p className="text-sm text-gray-600 mb-1">Valor Total a Pagar:</p>
+              <p className="text-3xl font-extrabold text-pink-600">
+                R$ {calcularTotal().toFixed(2).replace('.', ',')}
+              </p>
+
+              {/* QR Code Dinâmico via API Externa */}
+              <div className="my-4 flex justify-center">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(CHAVE_PIX)}`}
+                  alt="QR Code PIX"
+                  className="p-2 border border-pink-200 rounded-xl shadow-sm bg-white"
+                />
+              </div>
+
+              <p className="text-xs text-gray-500 mb-2">Escaneie o QR Code acima ou copie a Chave Aleatória abaixo:</p>
+
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs font-mono break-all text-gray-700 flex items-center justify-between gap-2">
+                <span>{CHAVE_PIX}</span>
+              </div>
+
+              <button
+                onClick={copiarChavePix}
+                className="mt-3 w-full bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2"
+              >
+                {chaveCopiada ? '✅ Chave Copiada!' : '📋 Copiar Chave PIX'}
+              </button>
+            </div>
+
+            <div className="border-t pt-4 space-y-2">
+              <p className="text-xs text-center text-amber-700 bg-amber-50 p-2.5 rounded-lg font-medium border border-amber-200">
+                ⚠️ Após efetuar o PIX na Caixa, clique no botão abaixo para enviar o pedido com o comprovante no WhatsApp.
+              </p>
+
+              <button
+                onClick={enviarPedidoWhatsApp}
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95"
+              >
+                Enviar Pedido e Comprovante no WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Barra Flutuante de Carrinho no Mobile */}
       {carrinho.length > 0 && (
