@@ -26,12 +26,36 @@ export default function App() {
   const [precisaTroco, setPrecisaTroco] = useState('');
   const [observacoes, setObservacoes] = useState('');
 
-  // Modal do PIX
+  // Modal do PIX e Temporizador (5 Minutos)
   const [mostrarModalPix, setMostrarModalPix] = useState(false);
   const [chaveCopiada, setChaveCopiada] = useState(false);
+  const [tempoRestante, setTempoRestante] = useState(300); // 300 segundos = 5 minutos
 
   const NUMERO_WHATSAPP = "5511996808580"; 
   const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
+
+  // Controla a contagem regressiva de 5 minutos do PIX
+  useEffect(() => {
+    let timer;
+    if (mostrarModalPix && tempoRestante > 0) {
+      timer = setInterval(() => {
+        setTempoRestante((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [mostrarModalPix, tempoRestante]);
+
+  // Formata o tempo restante (segundos) em MM:SS
+  const formatarTempo = (segundos) => {
+    const min = Math.floor(segundos / 60);
+    const seg = segundos % 60;
+    return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
+  };
+
+  // Reinicia o tempo de 5 minutos
+  const reiniciarTempoPix = () => {
+    setTempoRestante(300);
+  };
 
   // Verifica Horário de Funcionamento (08:00 às 21:00)
   useEffect(() => {
@@ -142,6 +166,7 @@ export default function App() {
     if (!validarFormulario()) return;
 
     if (formaPagamento === 'Pix') {
+      setTempoRestante(300); // Reseta para 5 minutos sempre que abrir o modal
       setMostrarModalPix(true);
     } else {
       enviarPedidoWhatsApp();
@@ -528,7 +553,7 @@ export default function App() {
 
       </main>
 
-      {/* Modal / Janela Flutuante do PIX */}
+      {/* Modal / Janela Flutuante do PIX com Timer de 5 Minutos */}
       {mostrarModalPix && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-pink-100 animate-fadeIn">
@@ -542,6 +567,19 @@ export default function App() {
               </button>
             </div>
 
+            {/* Contador Regressivo de 5 Minutos */}
+            <div className={`mt-3 p-2.5 rounded-xl text-center text-sm font-bold border transition ${
+              tempoRestante > 60 
+                ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                : 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse'
+            }`}>
+              {tempoRestante > 0 ? (
+                <span>⏰ Tempo restante para pagamento: <strong className="text-base">{formatarTempo(tempoRestante)}</strong></span>
+              ) : (
+                <span>⚠️ Tempo limite para realizar o PIX expirou!</span>
+              )}
+            </div>
+
             <div className="my-4 text-center">
               <p className="text-sm text-gray-600 mb-1">Valor Total a Pagar:</p>
               <p className="text-3xl font-extrabold text-pink-600">
@@ -553,7 +591,9 @@ export default function App() {
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(CHAVE_PIX)}`}
                   alt="QR Code PIX"
-                  className="p-2 border border-pink-200 rounded-xl shadow-sm bg-white"
+                  className={`p-2 border rounded-xl shadow-sm bg-white transition ${
+                    tempoRestante === 0 ? 'opacity-20 grayscale' : 'border-pink-200'
+                  }`}
                 />
               </div>
 
@@ -565,7 +605,8 @@ export default function App() {
 
               <button
                 onClick={copiarChavePix}
-                className="mt-3 w-full bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2"
+                disabled={tempoRestante === 0}
+                className="mt-3 w-full bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {chaveCopiada ? '✅ Chave Copiada!' : '📋 Copiar Chave PIX'}
               </button>
@@ -576,12 +617,21 @@ export default function App() {
                 ⚠️ Após efetuar o PIX na Caixa, clique no botão abaixo para enviar o pedido com o comprovante no WhatsApp.
               </p>
 
-              <button
-                onClick={enviarPedidoWhatsApp}
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95"
-              >
-                Enviar Pedido e Comprovante no WhatsApp
-              </button>
+              {tempoRestante > 0 ? (
+                <button
+                  onClick={enviarPedidoWhatsApp}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95"
+                >
+                  Enviar Pedido e Comprovante no WhatsApp
+                </button>
+              ) : (
+                <button
+                  onClick={reiniciarTempoPix}
+                  className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95"
+                >
+                  🔄 Tentar Novamente / Recarregar Tempo
+                </button>
+              )}
             </div>
           </div>
         </div>
