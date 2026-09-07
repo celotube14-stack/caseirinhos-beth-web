@@ -19,14 +19,14 @@ export default function App() {
   const [carrinho, setCarrinho] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Autenticação Admin & Modal Login
+  // Autenticação Admin & Modal Login (E-mail agora começa VAZIO)
   const [user, setUser] = useState(null);
   const [mostrarModalLogin, setMostrarModalLogin] = useState(false);
-  const [email, setEmail] = useState('celotube14@gmail.com');
+  const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erroLogin, setErroLogin] = useState('');
 
-  // Estados do Painel CRUD Admin (com destaque)
+  // Estados do Painel CRUD Admin
   const [boloEditando, setBoloEditando] = useState(null);
   const [nomeForm, setNomeForm] = useState('');
   const [precoForm, setPrecoForm] = useState('');
@@ -34,7 +34,7 @@ export default function App() {
   const [descricaoForm, setDescricaoForm] = useState('');
   const [destaqueForm, setDestaqueForm] = useState(false);
 
-  // Filtros, Busca e Layout de Visualização
+  // Filtros, Busca e Layout
   const [categoriaAtiva, setCategoriaAtiva] = useState('Todas');
   const [busca, setBusca] = useState('');
   const [modoVisualizacao, setModoVisualizacao] = useState('grade');
@@ -55,10 +55,9 @@ export default function App() {
   const [dataDesejada, setDataDesejada] = useState('');
   const [horarioDesejado, setHorarioDesejado] = useState('');
 
-  // Taxa de Entrega Fixa
   const VALOR_TAXA_ENTREGA = 7.00;
 
-  // Modal do PIX e Temporizador (5 Minutos)
+  // Modal do PIX
   const [mostrarModalPix, setMostrarModalPix] = useState(false);
   const [chaveCopiada, setChaveCopiada] = useState(false);
   const [tempoRestante, setTempoRestante] = useState(300);
@@ -66,7 +65,6 @@ export default function App() {
   const NUMERO_WHATSAPP = "5511996808580"; 
   const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
 
-  // Monitora Autenticação Admin
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (usuarioAtual) => {
       setUser(usuarioAtual);
@@ -74,7 +72,6 @@ export default function App() {
     return () => unsubscribeAuth();
   }, []);
 
-  // Controla a contagem regressiva de 5 minutos do PIX
   useEffect(() => {
     let timer;
     if (mostrarModalPix && tempoRestante > 0) {
@@ -95,7 +92,6 @@ export default function App() {
     setTempoRestante(300);
   };
 
-  // Verifica Horário de Funcionamento (08:00 às 21:00)
   useEffect(() => {
     const checarHorario = () => {
       const horaAtual = new Date().getHours();
@@ -106,7 +102,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Busca do Firestore EM TEMPO REAL
   useEffect(() => {
     setLoading(true);
     const bolosRef = collection(db, "bolos");
@@ -131,7 +126,7 @@ export default function App() {
         setLoading(false);
       },
       (error) => {
-        console.error("Erro ao escutar alterações do cardápio:", error);
+        console.error("Erro ao escutar cardápio:", error);
         setLoading(false);
       }
     );
@@ -146,10 +141,11 @@ export default function App() {
       await signInWithEmailAndPassword(auth, email.trim(), senha);
       setMostrarModalLogin(false);
       setSenha('');
-      exibirToast("Login de Admin efetuado com sucesso!");
+      setEmail('');
+      exibirToast("Painel Admin liberado com sucesso!");
     } catch (error) {
-      console.error("Erro original do Firebase:", error);
-      setErroLogin(`Erro (${error.code}): ${error.message}`);
+      console.error("Erro Firebase:", error);
+      setErroLogin(`E-mail ou senha incorretos.`);
     }
   };
 
@@ -181,15 +177,15 @@ export default function App() {
       if (boloEditando && boloEditando.id) {
         const boloRef = doc(db, "bolos", boloEditando.id);
         await updateDoc(boloRef, dadosBolo);
-        exibirToast("Produto atualizado com sucesso!");
+        exibirToast("Produto atualizado!");
       } else {
         await addDoc(collection(db, "bolos"), dadosBolo);
         exibirToast("Novo produto cadastrado!");
       }
       resetFormAdmin();
     } catch (error) {
-      console.error("Erro detalhado ao salvar/editar:", error);
-      alert("Erro ao salvar produto no banco.");
+      console.error("Erro ao salvar:", error);
+      alert("Erro ao salvar produto.");
     }
   };
 
@@ -204,7 +200,7 @@ export default function App() {
   };
 
   const handleDeletarBolo = async (id) => {
-    if (window.confirm("Tem certeza que deseja excluir este produto do cardápio?")) {
+    if (window.confirm("Deseja excluir este produto?")) {
       try {
         await deleteDoc(doc(db, "bolos", id));
         exibirToast("Produto excluído!");
@@ -368,25 +364,16 @@ export default function App() {
           </div>
         )}
 
-        {/* Header Estilizado */}
+        {/* Header Estilizado (Sem botão visível para clientes) */}
         <header className="bg-amber-50/80 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
           
-          {/* Botão de Login Admin Discreto */}
-          <div className="absolute top-3 right-4 z-10">
-            {isAdmin ? (
-              <div className="flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full border border-pink-200 shadow-sm">
-                <span className="text-xs font-bold text-pink-700">Admin</span>
-                <button onClick={handleLogout} className="text-xs text-red-600 hover:underline font-semibold">Sair</button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setMostrarModalLogin(true)}
-                className="text-xs text-pink-900/60 hover:text-pink-900 font-semibold flex items-center gap-1 bg-white/40 hover:bg-white/80 px-2.5 py-1 rounded-full transition"
-              >
-                🔒 Restrito
-              </button>
-            )}
-          </div>
+          {/* Se estiver logado, mostra status admin. Se não, o topo fica limpo para o cliente. */}
+          {isAdmin && (
+            <div className="absolute top-3 right-4 z-10 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-full border border-pink-200 shadow-sm">
+              <span className="text-xs font-bold text-pink-700">Admin Ativo</span>
+              <button onClick={handleLogout} className="text-xs text-red-600 hover:underline font-semibold">Sair</button>
+            </div>
+          )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
             
@@ -445,7 +432,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* Modal Login Admin */}
+        {/* Modal Login Admin (Campos em Branco e Seguros) */}
         {mostrarModalLogin && !isAdmin && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl border border-pink-100">
@@ -470,6 +457,7 @@ export default function App() {
                   <label className="block text-xs font-semibold text-gray-600 mb-1">E-mail</label>
                   <input
                     type="email"
+                    placeholder="Seu e-mail de admin"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -1062,7 +1050,7 @@ export default function App() {
         )}
       </div>
 
-      {/* Rodapé Oficial com Direitos Reservados */}
+      {/* Rodapé Oficial com Acesso Admin Discreto */}
       <footer className="bg-amber-50/60 border-t border-pink-100 py-8 px-4 text-center mt-12">
         <div className="max-w-4xl mx-auto flex flex-col items-center justify-center gap-2">
           <p 
@@ -1075,9 +1063,23 @@ export default function App() {
             Bolos caseiros e especiais feitos com muito amor para você e sua família.
           </p>
           <div className="w-12 h-0.5 bg-pink-200 my-1"></div>
-          <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} Caseirinhos da Beth. Todos os direitos reservados.
-          </p>
+          
+          <div className="flex items-center justify-center gap-2">
+            <p className="text-xs text-gray-500">
+              © {new Date().getFullYear()} Caseirinhos da Beth. Todos os direitos reservados.
+            </p>
+            
+            {/* Botão de acesso Admin bem discreto no rodapé (apenas um ponto ou ícone quase invisível) */}
+            {!isAdmin && (
+              <button 
+                onClick={() => setMostrarModalLogin(true)}
+                className="text-[10px] text-gray-300 hover:text-pink-600 transition ml-2"
+                title="Área Restrita"
+              >
+                •
+              </button>
+            )}
+          </div>
         </div>
       </footer>
 
