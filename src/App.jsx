@@ -86,7 +86,6 @@ export default function App() {
     return () => clearInterval(timer);
   }, [mostrarModalPix, tempoRestante]);
 
-  // Formata o tempo restante (segundos) em MM:SS
   const formatarTempo = (segundos) => {
     const min = Math.floor(segundos / 60);
     const seg = segundos % 60;
@@ -141,7 +140,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Autenticação Admin via E-mail/Senha com Diagnóstico Detalhado
   const handleLogin = async (e) => {
     e.preventDefault();
     setErroLogin('');
@@ -161,7 +159,6 @@ export default function App() {
     exibirToast("Você saiu do modo Admin.");
   };
 
-  // Funções CRUD do Painel Admin
   const handleUploadImagem = async (file) => {
     if (!file) return "";
     setEnviandoImagem(true);
@@ -327,7 +324,7 @@ export default function App() {
   };
 
   const enviarPedidoWhatsApp = () => {
-    let mensagem = `*Novo Pedido - Caseirinhos da Beth*\n\n`;
+    let mensagem = `*Novo Pedido (Sob Encomenda) - Caseirinhos da Beth*\n\n`;
     mensagem += `*Cliente:* ${nomeCliente}\n`;
     mensagem += `*Forma:* ${formaEntrega === 'entrega' ? 'Entrega' : 'Retirada no local'}\n`;
     
@@ -335,7 +332,7 @@ export default function App() {
       mensagem += `*Endereço:* ${enderecoCliente}\n`;
     }
     
-    mensagem += `\n*Itens do Pedido:*\n`;
+    mensagem += `\n*Itens Encomendados:*\n`;
     carrinho.forEach((item) => {
       mensagem += `• ${item.quantidade}x ${item.nome} (R$ ${(item.preco * item.quantidade).toFixed(2).replace('.', ',')})\n`;
     });
@@ -433,7 +430,13 @@ export default function App() {
             Bolos Caseiros e Especiais | Feitos com amor
           </p>
 
-          <span className={`inline-flex items-center gap-2 mt-4 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
+          {/* Aviso Destacado de Sob Encomenda */}
+          <div className="mt-3 bg-amber-100 text-amber-900 border border-amber-300 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-2">
+            <span>📅</span>
+            <span>Trabalhamos exclusivamente <strong>Sob Encomenda</strong> (Não temos a pronta entrega)</span>
+          </div>
+
+          <span className={`inline-flex items-center gap-2 mt-3 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
             lojaAberta 
               ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
               : 'bg-rose-100 text-rose-800 border-rose-300'
@@ -511,7 +514,7 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto p-6">
 
-        {/* PAINEL ADMIN: Cadastrar/Editar Produto (Exibido somente quando Admin estiver logado) */}
+        {/* PAINEL ADMIN: Cadastrar/Editar Produto */}
         {isAdmin && (
           <section className="bg-white rounded-xl shadow-md p-6 border-2 border-pink-300 mb-8">
             <h2 className="text-xl font-bold text-pink-700 mb-4 flex items-center gap-2">
@@ -650,7 +653,12 @@ export default function App() {
               </div>
             </div>
 
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Nosso Cardápio</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-800">Nosso Cardápio</h2>
+              <span className="text-xs text-pink-700 font-semibold bg-pink-100 px-3 py-1 rounded-full">
+                Feitos sob encomenda 🍰
+              </span>
+            </div>
             
             {loading ? (
               <p className="text-gray-500">Carregando delícias...</p>
@@ -691,7 +699,7 @@ export default function App() {
                           onClick={() => adicionarAoCarrinho(bolo)}
                           className="bg-pink-500 hover:bg-pink-600 text-white font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow-sm"
                         >
-                          + Adicionar
+                          + Encomendar
                         </button>
 
                         {/* Botões de Ação Admin no Card */}
@@ -745,7 +753,7 @@ export default function App() {
                         onClick={() => adicionarAoCarrinho(bolo)}
                         className="bg-pink-500 hover:bg-pink-600 text-white font-medium text-xs px-3 py-2 rounded-lg transition active:scale-95 shadow-sm"
                       >
-                        + Adicionar
+                        + Encomendar
                       </button>
 
                       {isAdmin && (
@@ -772,12 +780,16 @@ export default function App() {
             )}
           </section>
 
-          {/* Seção do Carrinho */}
+          {/* Seção do Carrinho / Pedido */}
           <aside id="carrinho-secao" className="bg-white rounded-xl shadow p-6 border border-pink-100 h-fit sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b">Seu Pedido</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2 pb-2 border-b">Sua Encomenda</h2>
             
+            <p className="text-xs text-amber-800 bg-amber-50 p-2 rounded-lg mb-3 border border-amber-200 font-medium">
+              ℹ️ Nossos bolos são preparados artesanalmente sob encomenda.
+            </p>
+
             {carrinho.length === 0 ? (
-              <p className="text-gray-400 text-center py-6">Seu carrinho está vazio.</p>
+              <p className="text-gray-400 text-center py-6">Sua lista de encomenda está vazia.</p>
             ) : (
               <div className="space-y-4">
                 <div className="max-h-48 overflow-y-auto space-y-3 pr-1">
@@ -882,9 +894,9 @@ export default function App() {
                   )}
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Observações do Pedido</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Observações da Encomenda</label>
                     <textarea
-                      placeholder="Ex: Mandar sem canela, embalar para presente..."
+                      placeholder="Ex: Data desejada para entrega, sem canela..."
                       value={observacoes}
                       onChange={(e) => setObservacoes(e.target.value)}
                       rows={2}
@@ -899,7 +911,7 @@ export default function App() {
                     <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                       <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
                     </svg>
-                    {formaPagamento === 'Pix' ? 'Pagar via PIX e Finalizar' : 'Enviar Pedido no WhatsApp'}
+                    {formaPagamento === 'Pix' ? 'Pagar via PIX e Enviar Encomenda' : 'Enviar Encomenda no WhatsApp'}
                   </button>
                 </div>
               </div>
@@ -923,7 +935,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Contador Regressivo de 5 Minutos */}
             <div className={`mt-3 p-2.5 rounded-xl text-center text-sm font-bold border transition ${
               tempoRestante > 60 
                 ? 'bg-amber-50 text-amber-800 border-amber-200' 
@@ -937,12 +948,11 @@ export default function App() {
             </div>
 
             <div className="my-4 text-center">
-              <p className="text-sm text-gray-600 mb-1">Valor Total a Pagar:</p>
+              <p className="text-sm text-gray-600 mb-1">Valor Total da Encomenda:</p>
               <p className="text-3xl font-extrabold text-pink-600">
                 R$ {calcularTotal().toFixed(2).replace('.', ',')}
               </p>
 
-              {/* QR Code Dinâmico */}
               <div className="my-4 flex justify-center">
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(CHAVE_PIX)}`}
@@ -970,7 +980,7 @@ export default function App() {
 
             <div className="border-t pt-4 space-y-2">
               <p className="text-xs text-center text-amber-700 bg-amber-50 p-2.5 rounded-lg font-medium border border-amber-200">
-                ⚠️ Após efetuar o PIX na Caixa, clique no botão abaixo para enviar o pedido com o comprovante no WhatsApp.
+                ⚠️ Após efetuar o PIX, clique no botão abaixo para confirmar a encomenda com o comprovante no WhatsApp.
               </p>
 
               {tempoRestante > 0 ? (
@@ -978,7 +988,7 @@ export default function App() {
                   onClick={enviarPedidoWhatsApp}
                   className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95"
                 >
-                  Enviar Pedido e Comprovante no WhatsApp
+                  Enviar Encomenda e Comprovante no WhatsApp
                 </button>
               ) : (
                 <button
@@ -993,7 +1003,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Barra Flutuante de Carrinho no Mobile */}
+      {/* Barra Flutuante no Mobile */}
       {carrinho.length > 0 && (
         <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
           <button
@@ -1004,7 +1014,7 @@ export default function App() {
               <span className="bg-white text-pink-600 text-xs font-extrabold w-6 h-6 rounded-full flex items-center justify-center">
                 {totalItensCarrinho}
               </span>
-              <span>Ver Pedido</span>
+              <span>Ver Encomenda</span>
             </div>
             <span className="text-pink-100 font-extrabold">
               R$ {calcularTotal().toFixed(2).replace('.', ',')}
