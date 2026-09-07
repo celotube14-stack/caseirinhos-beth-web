@@ -59,6 +59,9 @@ export default function App() {
   const [precisaTroco, setPrecisaTroco] = useState('');
   const [observacoes, setObservacoes] = useState('');
 
+  // Taxa de Entrega Fixa
+  const VALOR_TAXA_ENTREGA = 7.00;
+
   // Modal do PIX e Temporizador (5 Minutos)
   const [mostrarModalPix, setMostrarModalPix] = useState(false);
   const [chaveCopiada, setChaveCopiada] = useState(false);
@@ -215,7 +218,6 @@ export default function App() {
   };
 
   const handleEditarBolo = (bolo) => {
-    console.log("Editando bolo ID:", bolo.id, bolo);
     setBoloEditando(bolo);
     setNomeForm(bolo.nome || bolo.Nome || "");
     setPrecoForm(bolo.preco !== undefined ? bolo.preco : (bolo.Preço || ""));
@@ -276,8 +278,14 @@ export default function App() {
     );
   };
 
-  const calcularTotal = () => {
+  const calcularSubtotal = () => {
     return carrinho.reduce((acc, curr) => acc + curr.preco * curr.quantidade, 0);
+  };
+
+  const calcularTotal = () => {
+    const subtotal = calcularSubtotal();
+    const taxa = formaEntrega === 'entrega' ? VALOR_TAXA_ENTREGA : 0;
+    return subtotal + taxa;
   };
 
   const totalItensCarrinho = carrinho.reduce((acc, curr) => acc + curr.quantidade, 0);
@@ -326,7 +334,7 @@ export default function App() {
   const enviarPedidoWhatsApp = () => {
     let mensagem = `*Novo Pedido (Sob Encomenda) - Caseirinhos da Beth*\n\n`;
     mensagem += `*Cliente:* ${nomeCliente}\n`;
-    mensagem += `*Forma:* ${formaEntrega === 'entrega' ? 'Entrega' : 'Retirada no local'}\n`;
+    mensagem += `*Forma:* ${formaEntrega === 'entrega' ? 'Entrega (Redondezas)' : 'Retirada no local'}\n`;
     
     if (formaEntrega === 'entrega') {
       mensagem += `*Endereço:* ${enderecoCliente}\n`;
@@ -337,7 +345,14 @@ export default function App() {
       mensagem += `• ${item.quantidade}x ${item.nome} (R$ ${(item.preco * item.quantidade).toFixed(2).replace('.', ',')})\n`;
     });
 
-    mensagem += `\n*Total:* R$ ${calcularTotal().toFixed(2).replace('.', ',')}\n`;
+    const subtotal = calcularSubtotal();
+    mensagem += `\n*Subtotal:* R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
+    
+    if (formaEntrega === 'entrega') {
+      mensagem += `*Taxa de Entrega:* R$ ${VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}\n`;
+    }
+
+    mensagem += `*Total Geral:* R$ ${calcularTotal().toFixed(2).replace('.', ',')}\n`;
     mensagem += `*Pagamento:* ${formaPagamento}\n`;
     
     if (formaPagamento === 'Pix') {
@@ -821,11 +836,24 @@ export default function App() {
                   ))}
                 </div>
 
-                <div className="pt-2 border-t flex justify-between text-lg font-bold">
-                  <span>Total:</span>
-                  <span className="text-pink-600">
-                    R$ {calcularTotal().toFixed(2).replace('.', ',')}
-                  </span>
+                {/* Subtotal, Taxa e Total */}
+                <div className="pt-2 border-t space-y-1 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>R$ {calcularSubtotal().toFixed(2).replace('.', ',')}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Taxa de Entrega (Redondezas):</span>
+                    <span>{formaEntrega === 'entrega' ? `R$ ${VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}` : 'Grátis (Retirada)'}</span>
+                  </div>
+
+                  <div className="pt-2 border-t flex justify-between text-lg font-bold text-gray-800">
+                    <span>Total Geral:</span>
+                    <span className="text-pink-600">
+                      R$ {calcularTotal().toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Form de Checkout */}
@@ -848,8 +876,8 @@ export default function App() {
                       onChange={(e) => setFormaEntrega(e.target.value)}
                       className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
                     >
-                      <option value="entrega">Entrega</option>
-                      <option value="retirada">Retirar no local</option>
+                      <option value="entrega">Entrega nas Redondezas (Taxa R$ 7,00)</option>
+                      <option value="retirada">Retirar no local (Sem taxa)</option>
                     </select>
                   </div>
 
@@ -948,7 +976,7 @@ export default function App() {
             </div>
 
             <div className="my-4 text-center">
-              <p className="text-sm text-gray-600 mb-1">Valor Total da Encomenda:</p>
+              <p className="text-sm text-gray-600 mb-1">Valor Total da Encomenda (com taxa):</p>
               <p className="text-3xl font-extrabold text-pink-600">
                 R$ {calcularTotal().toFixed(2).replace('.', ',')}
               </p>
