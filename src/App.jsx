@@ -358,346 +358,405 @@ export default function App() {
   const isAdmin = user && user.email === "celotube14@gmail.com";
 
   return (
-    <div className="min-h-screen bg-pink-50 font-sans pb-24 md:pb-12 relative">
+    <div className="min-h-screen bg-pink-50 font-sans pb-24 md:pb-12 relative flex flex-col justify-between">
       
-      {/* Toast Notification */}
-      {toastMsg && (
-        <div className="fixed top-5 right-5 z-50 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-xl border border-gray-700 animate-bounce">
-          ✨ {toastMsg}
-        </div>
-      )}
-
-      {/* Header Estilizado */}
-      <header className="bg-amber-50/80 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
-        
-        {/* Botão de Login Admin Discreto */}
-        <div className="absolute top-3 right-4 z-10">
-          {isAdmin ? (
-            <div className="flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full border border-pink-200 shadow-sm">
-              <span className="text-xs font-bold text-pink-700">Admin</span>
-              <button onClick={handleLogout} className="text-xs text-red-600 hover:underline font-semibold">Sair</button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setMostrarModalLogin(true)}
-              className="text-xs text-pink-900/60 hover:text-pink-900 font-semibold flex items-center gap-1 bg-white/40 hover:bg-white/80 px-2.5 py-1 rounded-full transition"
-            >
-              🔒 Restrito
-            </button>
-          )}
-        </div>
-
-        <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
-          
-          <div className="flex items-center gap-2 mb-1 text-rose-700 opacity-90">
-            <span className="h-[1.5px] w-8 bg-rose-600 rounded-full"></span>
-            <svg className="w-5 h-5 fill-rose-600" viewBox="0 0 24 24">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-            <span className="h-[1.5px] w-8 bg-rose-600 rounded-full"></span>
+      <div>
+        {/* Toast Notification */}
+        {toastMsg && (
+          <div className="fixed top-5 right-5 z-50 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-xl border border-gray-700 animate-bounce">
+            ✨ {toastMsg}
           </div>
-
-          <h1 
-            className="text-5xl md:text-6xl font-normal leading-tight tracking-wide drop-shadow-sm select-none"
-            style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}
-          >
-            Caseirinhos
-          </h1>
-
-          <div className="flex items-center justify-center gap-2 -mt-3 relative">
-            <span 
-              className="text-2xl md:text-3xl"
-              style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}
-            >
-              da
-            </span>
-            <span 
-              className="text-5xl md:text-6xl text-rose-700"
-              style={{ fontFamily: "'Pacifico', cursive" }}
-            >
-              Beth
-            </span>
-
-            <svg className="w-8 h-8 text-rose-600 inline-block ml-1 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </div>
-
-          <p className="mt-3 text-pink-900/80 text-sm md:text-base font-semibold tracking-wider">
-            Bolos Caseiros e Especiais | Feitos com amor
-          </p>
-
-          <div className="mt-3 bg-amber-100 text-amber-900 border border-amber-300 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-2">
-            <span>📅</span>
-            <span>Trabalhamos exclusivamente <strong>Sob Encomenda</strong></span>
-          </div>
-
-          <span className={`inline-flex items-center gap-2 mt-3 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
-            lojaAberta 
-              ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
-              : 'bg-rose-100 text-rose-800 border-rose-300'
-          }`}>
-            <span className={`w-2 h-2 rounded-full ${lojaAberta ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-            {lojaAberta ? 'Aberto Agora (08:00 às 21:00)' : 'Fechado no momento (Abre às 08:00)'}
-          </span>
-
-        </div>
-      </header>
-
-      {/* Modal Login Admin */}
-      {mostrarModalLogin && !isAdmin && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl border border-pink-100">
-            <div className="flex justify-between items-center pb-2 border-b mb-4">
-              <h3 className="text-lg font-bold text-gray-800">Acesso Administrativo</h3>
-              <button 
-                onClick={() => setMostrarModalLogin(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            {erroLogin && (
-              <p className="text-xs bg-red-50 text-red-600 p-2.5 rounded-lg mb-3 border border-red-100 font-semibold break-words">
-                {erroLogin}
-              </p>
-            )}
-
-            <form onSubmit={handleLogin} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">E-mail</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full text-sm px-3 py-2 border rounded-lg focus:outline-none focus:border-pink-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Senha</label>
-                <input
-                  type="password"
-                  placeholder="Sua senha"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                  required
-                  className="w-full text-sm px-3 py-2 border rounded-lg focus:outline-none focus:border-pink-500"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 rounded-xl text-sm transition"
-                >
-                  Entrar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMostrarModalLogin(false)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-3 py-2 rounded-xl text-sm transition"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <main className="max-w-6xl mx-auto p-6">
-
-        {/* PAINEL ADMIN */}
-        {isAdmin && (
-          <section className="bg-white rounded-xl shadow-md p-6 border-2 border-pink-300 mb-8">
-            <h2 className="text-xl font-bold text-pink-700 mb-4 flex items-center gap-2">
-              <span>🛠️</span> {boloEditando ? "Editar Produto do Cardápio" : "Cadastrar Novo Bolo"}
-            </h2>
-
-            <form onSubmit={handleSalvarBolo} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Nome do Bolo"
-                value={nomeForm}
-                onChange={(e) => setNomeForm(e.target.value)}
-                required
-                className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
-              />
-
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Preço (R$)"
-                value={precoForm}
-                onChange={(e) => setPrecoForm(e.target.value)}
-                required
-                className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
-              />
-
-              <select
-                value={categoriaForm}
-                onChange={(e) => setCategoriaForm(e.target.value)}
-                className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white md:col-span-2"
-              >
-                {categorias.filter(c => c !== "Todas").map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-
-              <textarea
-                placeholder="Descrição dos ingredientes..."
-                value={descricaoForm}
-                onChange={(e) => setDescricaoForm(e.target.value)}
-                rows={2}
-                className="md:col-span-2 text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
-              />
-
-              <div className="md:col-span-2 flex items-center gap-2 bg-pink-50 p-3 rounded-lg border border-pink-100">
-                <input
-                  type="checkbox"
-                  id="chkDestaque"
-                  checked={destaqueForm}
-                  onChange={(e) => setDestaqueForm(e.target.checked)}
-                  className="w-4 h-4 text-pink-600 rounded focus:ring-pink-500"
-                />
-                <label htmlFor="chkDestaque" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                  Marcar como Mais Vendido / Destaque ⭐
-                </label>
-              </div>
-
-              <div className="md:col-span-2 flex gap-3">
-                <button
-                  type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow"
-                >
-                  {boloEditando ? "Atualizar Bolo" : "Cadastrar Bolo"}
-                </button>
-                
-                {boloEditando && (
-                  <button
-                    type="button"
-                    onClick={resetFormAdmin}
-                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2.5 rounded-xl text-sm transition"
-                  >
-                    Cancelar Edição
-                  </button>
-                )}
-              </div>
-            </form>
-          </section>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Header Estilizado */}
+        <header className="bg-amber-50/80 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
           
-          {/* Cardápio */}
-          <section className="md:col-span-2">
+          {/* Botão de Login Admin Discreto */}
+          <div className="absolute top-3 right-4 z-10">
+            {isAdmin ? (
+              <div className="flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full border border-pink-200 shadow-sm">
+                <span className="text-xs font-bold text-pink-700">Admin</span>
+                <button onClick={handleLogout} className="text-xs text-red-600 hover:underline font-semibold">Sair</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setMostrarModalLogin(true)}
+                className="text-xs text-pink-900/60 hover:text-pink-900 font-semibold flex items-center gap-1 bg-white/40 hover:bg-white/80 px-2.5 py-1 rounded-full transition"
+              >
+                🔒 Restrito
+              </button>
+            )}
+          </div>
+
+          <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
             
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder="🔍 Buscar por sabor (ex: Nutella, Cenoura, Milho)..."
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-pink-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white shadow-sm"
-              />
+            <div className="flex items-center gap-2 mb-1 text-rose-700 opacity-90">
+              <span className="h-[1.5px] w-8 bg-rose-600 rounded-full"></span>
+              <svg className="w-5 h-5 fill-rose-600" viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+              <span className="h-[1.5px] w-8 bg-rose-600 rounded-full"></span>
             </div>
 
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-2">
-                {categorias.map((cat) => (
+            <h1 
+              className="text-5xl md:text-6xl font-normal leading-tight tracking-wide drop-shadow-sm select-none"
+              style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}
+            >
+              Caseirinhos
+            </h1>
+
+            <div className="flex items-center justify-center gap-2 -mt-3 relative">
+              <span 
+                className="text-2xl md:text-3xl"
+                style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}
+              >
+                da
+              </span>
+              <span 
+                className="text-5xl md:text-6xl text-rose-700"
+                style={{ fontFamily: "'Pacifico', cursive" }}
+              >
+                Beth
+              </span>
+
+              <svg className="w-8 h-8 text-rose-600 inline-block ml-1 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+
+            <p className="mt-3 text-pink-900/80 text-sm md:text-base font-semibold tracking-wider">
+              Bolos Caseiros e Especiais | Feitos com amor
+            </p>
+
+            <div className="mt-3 bg-amber-100 text-amber-900 border border-amber-300 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-2">
+              <span>📅</span>
+              <span>Trabalhamos exclusivamente <strong>Sob Encomenda</strong></span>
+            </div>
+
+            <span className={`inline-flex items-center gap-2 mt-3 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
+              lojaAberta 
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                : 'bg-rose-100 text-rose-800 border-rose-300'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${lojaAberta ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+              {lojaAberta ? 'Aberto Agora (08:00 às 21:00)' : 'Fechado no momento (Abre às 08:00)'}
+            </span>
+
+          </div>
+        </header>
+
+        {/* Modal Login Admin */}
+        {mostrarModalLogin && !isAdmin && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl border border-pink-100">
+              <div className="flex justify-between items-center pb-2 border-b mb-4">
+                <h3 className="text-lg font-bold text-gray-800">Acesso Administrativo</h3>
+                <button 
+                  onClick={() => setMostrarModalLogin(false)}
+                  className="text-gray-400 hover:text-gray-600 font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {erroLogin && (
+                <p className="text-xs bg-red-50 text-red-600 p-2.5 rounded-lg mb-3 border border-red-100 font-semibold break-words">
+                  {erroLogin}
+                </p>
+              )}
+
+              <form onSubmit={handleLogin} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">E-mail</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full text-sm px-3 py-2 border rounded-lg focus:outline-none focus:border-pink-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Senha</label>
+                  <input
+                    type="password"
+                    placeholder="Sua senha"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    required
+                    className="w-full text-sm px-3 py-2 border rounded-lg focus:outline-none focus:border-pink-500"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
                   <button
-                    key={cat}
-                    onClick={() => setCategoriaAtiva(cat)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
-                      categoriaAtiva.toLowerCase() === cat.toLowerCase()
-                        ? 'bg-pink-600 text-white shadow'
-                        : 'bg-white text-pink-600 border border-pink-200 hover:bg-pink-100'
+                    type="submit"
+                    className="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 rounded-xl text-sm transition"
+                  >
+                    Entrar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarModalLogin(false)}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-3 py-2 rounded-xl text-sm transition"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        <main className="max-w-6xl mx-auto p-6">
+
+          {/* PAINEL ADMIN */}
+          {isAdmin && (
+            <section className="bg-white rounded-xl shadow-md p-6 border-2 border-pink-300 mb-8">
+              <h2 className="text-xl font-bold text-pink-700 mb-4 flex items-center gap-2">
+                <span>🛠️</span> {boloEditando ? "Editar Produto do Cardápio" : "Cadastrar Novo Bolo"}
+              </h2>
+
+              <form onSubmit={handleSalvarBolo} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Nome do Bolo"
+                  value={nomeForm}
+                  onChange={(e) => setNomeForm(e.target.value)}
+                  required
+                  className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
+                />
+
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Preço (R$)"
+                  value={precoForm}
+                  onChange={(e) => setPrecoForm(e.target.value)}
+                  required
+                  className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
+                />
+
+                <select
+                  value={categoriaForm}
+                  onChange={(e) => setCategoriaForm(e.target.value)}
+                  className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white md:col-span-2"
+                >
+                  {categorias.filter(c => c !== "Todas").map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+
+                <textarea
+                  placeholder="Descrição dos ingredientes..."
+                  value={descricaoForm}
+                  onChange={(e) => setDescricaoForm(e.target.value)}
+                  rows={2}
+                  className="md:col-span-2 text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
+                />
+
+                <div className="md:col-span-2 flex items-center gap-2 bg-pink-50 p-3 rounded-lg border border-pink-100">
+                  <input
+                    type="checkbox"
+                    id="chkDestaque"
+                    checked={destaqueForm}
+                    onChange={(e) => setDestaqueForm(e.target.checked)}
+                    className="w-4 h-4 text-pink-600 rounded focus:ring-pink-500"
+                  />
+                  <label htmlFor="chkDestaque" className="text-sm font-semibold text-gray-700 cursor-pointer">
+                    Marcar como Mais Vendido / Destaque ⭐
+                  </label>
+                </div>
+
+                <div className="md:col-span-2 flex gap-3">
+                  <button
+                    type="submit"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow"
+                  >
+                    {boloEditando ? "Atualizar Bolo" : "Cadastrar Bolo"}
+                  </button>
+                  
+                  {boloEditando && (
+                    <button
+                      type="button"
+                      onClick={resetFormAdmin}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2.5 rounded-xl text-sm transition"
+                    >
+                      Cancelar Edição
+                    </button>
+                  )}
+                </div>
+              </form>
+            </section>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Cardápio */}
+            <section className="md:col-span-2">
+              
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="🔍 Buscar por sabor (ex: Nutella, Cenoura, Milho)..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-pink-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white shadow-sm"
+                />
+              </div>
+
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-2">
+                  {categorias.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setCategoriaAtiva(cat)}
+                      className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
+                        categoriaAtiva.toLowerCase() === cat.toLowerCase()
+                          ? 'bg-pink-600 text-white shadow'
+                          : 'bg-white text-pink-600 border border-pink-200 hover:bg-pink-100'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="bg-white p-1 rounded-xl border border-pink-200 flex items-center gap-1 shadow-sm">
+                  <button
+                    onClick={() => setModoVisualizacao('grade')}
+                    title="Visualização em Cards"
+                    className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+                      modoVisualizacao === 'grade'
+                        ? 'bg-pink-500 text-white shadow-sm'
+                        : 'text-gray-500 hover:text-pink-600'
                     }`}
                   >
-                    {cat}
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/>
+                    </svg>
+                    <span className="hidden sm:inline">Cards</span>
                   </button>
-                ))}
+                  <button
+                    onClick={() => setModoVisualizacao('lista')}
+                    title="Visualização em Lista"
+                    className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+                      modoVisualizacao === 'lista'
+                        ? 'bg-pink-500 text-white shadow-sm'
+                        : 'text-gray-500 hover:text-pink-600'
+                    }`}
+                  >
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
+                    </svg>
+                    <span className="hidden sm:inline">Lista</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="bg-white p-1 rounded-xl border border-pink-200 flex items-center gap-1 shadow-sm">
-                <button
-                  onClick={() => setModoVisualizacao('grade')}
-                  title="Visualização em Cards"
-                  className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
-                    modoVisualizacao === 'grade'
-                      ? 'bg-pink-500 text-white shadow-sm'
-                      : 'text-gray-500 hover:text-pink-600'
-                  }`}
-                >
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/>
-                  </svg>
-                  <span className="hidden sm:inline">Cards</span>
-                </button>
-                <button
-                  onClick={() => setModoVisualizacao('lista')}
-                  title="Visualização em Lista"
-                  className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
-                    modoVisualizacao === 'lista'
-                      ? 'bg-pink-500 text-white shadow-sm'
-                      : 'text-gray-500 hover:text-pink-600'
-                  }`}
-                >
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
-                  </svg>
-                  <span className="hidden sm:inline">Lista</span>
-                </button>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-800">Nosso Cardápio</h2>
+                <span className="text-xs text-pink-700 font-semibold bg-pink-100 px-3 py-1 rounded-full">
+                  Feitos sob encomenda 🍰
+                </span>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Nosso Cardápio</h2>
-              <span className="text-xs text-pink-700 font-semibold bg-pink-100 px-3 py-1 rounded-full">
-                Feitos sob encomenda 🍰
-              </span>
-            </div>
-            
-            {loading ? (
-              <p className="text-gray-500">Carregando delícias...</p>
-            ) : bolosFiltrados.length === 0 ? (
-              <p className="text-gray-500">Nenhum bolo encontrado para essa pesquisa.</p>
-            ) : modoVisualizacao === 'grade' ? (
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {bolosFiltrados.map((bolo) => (
-                  <div key={bolo.id} className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition relative">
-                    {bolo.destaque && (
-                      <span className="absolute -top-2.5 -right-2 bg-amber-400 text-amber-950 font-bold text-[10px] px-3 py-1 rounded-full shadow-md border border-amber-200 flex items-center gap-1">
-                        ⭐ Mais Vendido
-                      </span>
-                    )}
-
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="text-xl font-bold text-gray-800">{bolo.nome}</h3>
-                        <span className="text-xs bg-pink-100 text-pink-600 font-semibold px-2.5 py-1 rounded-full h-fit whitespace-nowrap">
-                          {bolo.categoria}
+              {loading ? (
+                <p className="text-gray-500">Carregando delícias...</p>
+              ) : bolosFiltrados.length === 0 ? (
+                <p className="text-gray-500">Nenhum bolo encontrado para essa pesquisa.</p>
+              ) : modoVisualizacao === 'grade' ? (
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {bolosFiltrados.map((bolo) => (
+                    <div key={bolo.id} className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition relative">
+                      {bolo.destaque && (
+                        <span className="absolute -top-2.5 -right-2 bg-amber-400 text-amber-950 font-bold text-[10px] px-3 py-1 rounded-full shadow-md border border-amber-200 flex items-center gap-1">
+                          ⭐ Mais Vendido
                         </span>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-2">{bolo.descricao}</p>
-                    </div>
+                      )}
 
-                    <div className="mt-5 flex items-center justify-between pt-3 border-t border-gray-100">
                       <div>
-                        <span className="text-xs text-gray-400 block font-medium">Preço</span>
-                        <span className="text-lg font-bold text-pink-600">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="text-xl font-bold text-gray-800">{bolo.nome}</h3>
+                          <span className="text-xs bg-pink-100 text-pink-600 font-semibold px-2.5 py-1 rounded-full h-fit whitespace-nowrap">
+                            {bolo.categoria}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-2">{bolo.descricao}</p>
+                      </div>
+
+                      <div className="mt-5 flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div>
+                          <span className="text-xs text-gray-400 block font-medium">Preço</span>
+                          <span className="text-lg font-bold text-pink-600">
+                            R$ {bolo.preco.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => adicionarAoCarrinho(bolo)}
+                            className="bg-pink-500 hover:bg-pink-600 text-white font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow-sm"
+                          >
+                            + Encomendar
+                          </button>
+
+                          {isAdmin && (
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => handleEditarBolo(bolo)}
+                                className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-bold px-2 py-2 rounded-lg"
+                                title="Editar Produto"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => handleDeletarBolo(bolo.id)}
+                                className="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold px-2 py-2 rounded-lg"
+                                title="Excluir Produto"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+              ) : (
+
+                <div className="bg-white rounded-xl shadow border border-pink-100 divide-y divide-gray-100">
+                  {bolosFiltrados.map((bolo) => (
+                    <div key={bolo.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-pink-50/50 transition">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-bold text-gray-800">{bolo.nome}</h3>
+                          {bolo.destaque && (
+                            <span className="bg-amber-100 text-amber-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-200">
+                              ⭐ Mais Vendido
+                            </span>
+                          )}
+                          <span className="text-[10px] bg-pink-100 text-pink-600 font-semibold px-2 py-0.5 rounded-full">
+                            {bolo.categoria}
+                          </span>
+                        </div>
+                        {bolo.descricao && (
+                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{bolo.descricao}</p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                        <span className="text-base font-bold text-pink-600">
                           R$ {bolo.preco.toFixed(2).replace('.', ',')}
                         </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
+                        
                         <button
                           onClick={() => adicionarAoCarrinho(bolo)}
-                          className="bg-pink-500 hover:bg-pink-600 text-white font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow-sm"
+                          className="bg-pink-500 hover:bg-pink-600 text-white font-medium text-xs px-3 py-2 rounded-lg transition active:scale-95 shadow-sm"
                         >
                           + Encomendar
                         </button>
@@ -706,15 +765,13 @@ export default function App() {
                           <div className="flex gap-1">
                             <button
                               onClick={() => handleEditarBolo(bolo)}
-                              className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-bold px-2 py-2 rounded-lg"
-                              title="Editar Produto"
+                              className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-bold px-2 py-1.5 rounded-lg"
                             >
                               ✏️
                             </button>
                             <button
                               onClick={() => handleDeletarBolo(bolo.id)}
-                              className="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold px-2 py-2 rounded-lg"
-                              title="Excluir Produto"
+                              className="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold px-2 py-1.5 rounded-lg"
                             >
                               🗑️
                             </button>
@@ -722,343 +779,307 @@ export default function App() {
                         )}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-            ) : (
-
-              <div className="bg-white rounded-xl shadow border border-pink-100 divide-y divide-gray-100">
-                {bolosFiltrados.map((bolo) => (
-                  <div key={bolo.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-pink-50/50 transition">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-bold text-gray-800">{bolo.nome}</h3>
-                        {bolo.destaque && (
-                          <span className="bg-amber-100 text-amber-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-200">
-                            ⭐ Mais Vendido
-                          </span>
-                        )}
-                        <span className="text-[10px] bg-pink-100 text-pink-600 font-semibold px-2 py-0.5 rounded-full">
-                          {bolo.categoria}
-                        </span>
-                      </div>
-                      {bolo.descricao && (
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{bolo.descricao}</p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-                      <span className="text-base font-bold text-pink-600">
-                        R$ {bolo.preco.toFixed(2).replace('.', ',')}
-                      </span>
-                      
-                      <button
-                        onClick={() => adicionarAoCarrinho(bolo)}
-                        className="bg-pink-500 hover:bg-pink-600 text-white font-medium text-xs px-3 py-2 rounded-lg transition active:scale-95 shadow-sm"
-                      >
-                        + Encomendar
-                      </button>
-
-                      {isAdmin && (
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => handleEditarBolo(bolo)}
-                            className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-bold px-2 py-1.5 rounded-lg"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => handleDeletarBolo(bolo.id)}
-                            className="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold px-2 py-1.5 rounded-lg"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-            )}
-          </section>
-
-          {/* Carrinho / Pedido */}
-          <aside id="carrinho-secao" className="bg-white rounded-xl shadow p-6 border border-pink-100 h-fit sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2 pb-2 border-b">Sua Encomenda</h2>
-            
-            <p className="text-xs text-amber-800 bg-amber-50 p-2 rounded-lg mb-3 border border-amber-200 font-medium">
-              ℹ️ Nossos bolos são preparados artesanalmente sob encomenda.
-            </p>
-
-            {carrinho.length === 0 ? (
-              <p className="text-gray-400 text-center py-6">Sua lista de encomenda está vazia.</p>
-            ) : (
-              <div className="space-y-4">
-                <div className="max-h-48 overflow-y-auto space-y-3 pr-1">
-                  {carrinho.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center text-sm border-b pb-2">
-                      <div className="pr-2">
-                        <p className="font-medium text-gray-700">{item.nome}</p>
-                        <p className="text-pink-600 font-bold">
-                          R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 bg-pink-50 px-2 py-1 rounded-lg border border-pink-100">
-                        <button
-                          onClick={() => alterarQuantidade(item.id, -1)}
-                          className="text-pink-600 font-bold px-1.5 hover:bg-pink-200 rounded text-base"
-                        >
-                          -
-                        </button>
-                        <span className="font-semibold text-gray-800 w-4 text-center">{item.quantidade}</span>
-                        <button
-                          onClick={() => alterarQuantidade(item.id, 1)}
-                          className="text-pink-600 font-bold px-1.5 hover:bg-pink-200 rounded text-base"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
                   ))}
                 </div>
 
-                <div className="pt-2 border-t space-y-1 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>R$ {calcularSubtotal().toFixed(2).replace('.', ',')}</span>
+              )}
+            </section>
+
+            {/* Carrinho / Pedido */}
+            <aside id="carrinho-secao" className="bg-white rounded-xl shadow p-6 border border-pink-100 h-fit sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2 pb-2 border-b">Sua Encomenda</h2>
+              
+              <p className="text-xs text-amber-800 bg-amber-50 p-2 rounded-lg mb-3 border border-amber-200 font-medium">
+                ℹ️ Nossos bolos são preparados artesanalmente sob encomenda.
+              </p>
+
+              {carrinho.length === 0 ? (
+                <p className="text-gray-400 text-center py-6">Sua lista de encomenda está vazia.</p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="max-h-48 overflow-y-auto space-y-3 pr-1">
+                    {carrinho.map((item) => (
+                      <div key={item.id} className="flex justify-between items-center text-sm border-b pb-2">
+                        <div className="pr-2">
+                          <p className="font-medium text-gray-700">{item.nome}</p>
+                          <p className="text-pink-600 font-bold">
+                            R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 bg-pink-50 px-2 py-1 rounded-lg border border-pink-100">
+                          <button
+                            onClick={() => alterarQuantidade(item.id, -1)}
+                            className="text-pink-600 font-bold px-1.5 hover:bg-pink-200 rounded text-base"
+                          >
+                            -
+                          </button>
+                          <span className="font-semibold text-gray-800 w-4 text-center">{item.quantidade}</span>
+                          <button
+                            onClick={() => alterarQuantidade(item.id, 1)}
+                            className="text-pink-600 font-bold px-1.5 hover:bg-pink-200 rounded text-base"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="flex justify-between">
-                    <span>Taxa de Entrega (Redondezas):</span>
-                    <span>{formaEntrega === 'entrega' ? `R$ ${VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}` : 'Grátis (Retirada)'}</span>
+                  <div className="pt-2 border-t space-y-1 text-sm text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Subtotal:</span>
+                      <span>R$ {calcularSubtotal().toFixed(2).replace('.', ',')}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>Taxa de Entrega (Redondezas):</span>
+                      <span>{formaEntrega === 'entrega' ? `R$ ${VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}` : 'Grátis (Retirada)'}</span>
+                    </div>
+
+                    <div className="pt-2 border-t flex justify-between text-lg font-bold text-gray-800">
+                      <span>Total Geral:</span>
+                      <span className="text-pink-600">
+                        R$ {calcularTotal().toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="pt-2 border-t flex justify-between text-lg font-bold text-gray-800">
-                    <span>Total Geral:</span>
-                    <span className="text-pink-600">
-                      R$ {calcularTotal().toFixed(2).replace('.', ',')}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Seu Nome *</label>
-                    <input
-                      type="text"
-                      placeholder="Digite seu nome"
-                      value={nomeCliente}
-                      onChange={(e) => setNomeCliente(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
-                    />
-                  </div>
-
-                  {/* Agendamento de Data e Horário */}
-                  <div className="grid grid-cols-2 gap-2 bg-pink-50/60 p-2.5 rounded-xl border border-pink-100">
+                  <div className="pt-2 border-t space-y-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">📅 Para qual Data? *</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Seu Nome *</label>
                       <input
-                        type="date"
-                        value={dataDesejada}
-                        onChange={(e) => setDataDesejada(e.target.value)}
-                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:border-pink-500"
+                        type="text"
+                        placeholder="Digite seu nome"
+                        value={nomeCliente}
+                        onChange={(e) => setNomeCliente(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">⏰ Qual Horário? *</label>
-                      <input
-                        type="time"
-                        value={horarioDesejado}
-                        onChange={(e) => setHorarioDesejado(e.target.value)}
-                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:border-pink-500"
-                      />
+
+                    {/* Agendamento de Data e Horário */}
+                    <div className="grid grid-cols-2 gap-2 bg-pink-50/60 p-2.5 rounded-xl border border-pink-100">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">📅 Para qual Data? *</label>
+                        <input
+                          type="date"
+                          value={dataDesejada}
+                          onChange={(e) => setDataDesejada(e.target.value)}
+                          className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:border-pink-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">⏰ Qual Horário? *</label>
+                        <input
+                          type="time"
+                          value={horarioDesejado}
+                          onChange={(e) => setHorarioDesejado(e.target.value)}
+                          className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:border-pink-500"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Opção</label>
-                    <select
-                      value={formaEntrega}
-                      onChange={(e) => setFormaEntrega(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
-                    >
-                      <option value="entrega">Entrega nas Redondezas (Taxa R$ 7,00)</option>
-                      <option value="retirada">Retirar no local (Sem taxa)</option>
-                    </select>
-                  </div>
-
-                  {formaEntrega === 'entrega' && (
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Endereço de Entrega *</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Opção</label>
+                      <select
+                        value={formaEntrega}
+                        onChange={(e) => setFormaEntrega(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
+                      >
+                        <option value="entrega">Entrega nas Redondezas (Taxa R$ 7,00)</option>
+                        <option value="retirada">Retirar no local (Sem taxa)</option>
+                      </select>
+                    </div>
+
+                    {formaEntrega === 'entrega' && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Endereço de Entrega *</label>
+                        <textarea
+                          placeholder="Rua, número, bairro e complemento"
+                          value={enderecoCliente}
+                          onChange={(e) => setEnderecoCliente(e.target.value)}
+                          rows={2}
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Forma de Pagamento</label>
+                      <select
+                        value={formaPagamento}
+                        onChange={(e) => setFormaPagamento(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
+                      >
+                        <option value="Pix">Pix (Pagamento Antecipado)</option>
+                        <option value="Cartão de Crédito">Cartão de Crédito</option>
+                        <option value="Cartão de Débito">Cartão de Débito</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                      </select>
+                    </div>
+
+                    {formaPagamento === 'Dinheiro' && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Troco para quanto?</label>
+                        <input
+                          type="text"
+                          placeholder="Ex: 50,00 (deixe em branco se não precisar)"
+                          value={precisaTroco}
+                          onChange={(e) => setPrecisaTroco(e.target.value)}
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Observações da Encomenda</label>
                       <textarea
-                        placeholder="Rua, número, bairro e complemento"
-                        value={enderecoCliente}
-                        onChange={(e) => setEnderecoCliente(e.target.value)}
+                        placeholder="Ex: Sem canela, escrever Parabéns no topo..."
+                        value={observacoes}
+                        onChange={(e) => setObservacoes(e.target.value)}
                         rows={2}
                         className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
                       />
                     </div>
-                  )}
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Forma de Pagamento</label>
-                    <select
-                      value={formaPagamento}
-                      onChange={(e) => setFormaPagamento(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
+                    <button
+                      onClick={processarCheckout}
+                      className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-sm active:scale-95"
                     >
-                      <option value="Pix">Pix (Pagamento Antecipado)</option>
-                      <option value="Cartão de Crédito">Cartão de Crédito</option>
-                      <option value="Cartão de Débito">Cartão de Débito</option>
-                      <option value="Dinheiro">Dinheiro</option>
-                    </select>
+                      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+                      </svg>
+                      {formaPagamento === 'Pix' ? 'Pagar via PIX e Enviar Encomenda' : 'Enviar Encomenda no WhatsApp'}
+                    </button>
                   </div>
-
-                  {formaPagamento === 'Dinheiro' && (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Troco para quanto?</label>
-                      <input
-                        type="text"
-                        placeholder="Ex: 50,00 (deixe em branco se não precisar)"
-                        value={precisaTroco}
-                        onChange={(e) => setPrecisaTroco(e.target.value)}
-                        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
-                      />
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Observações da Encomenda</label>
-                    <textarea
-                      placeholder="Ex: Sem canela, escrever Parabéns no topo..."
-                      value={observacoes}
-                      onChange={(e) => setObservacoes(e.target.value)}
-                      rows={2}
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
-                    />
-                  </div>
-
-                  <button
-                    onClick={processarCheckout}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-sm active:scale-95"
-                  >
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
-                    </svg>
-                    {formaPagamento === 'Pix' ? 'Pagar via PIX e Enviar Encomenda' : 'Enviar Encomenda no WhatsApp'}
-                  </button>
                 </div>
-              </div>
-            )}
-          </aside>
-
-        </div>
-      </main>
-
-      {/* Modal PIX */}
-      {mostrarModalPix && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-pink-100">
-            <div className="flex justify-between items-center pb-3 border-b">
-              <h3 className="text-xl font-bold text-gray-800">Pagamento via PIX</h3>
-              <button 
-                onClick={() => setMostrarModalPix(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className={`mt-3 p-2.5 rounded-xl text-center text-sm font-bold border transition ${
-              tempoRestante > 60 
-                ? 'bg-amber-50 text-amber-800 border-amber-200' 
-                : 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse'
-            }`}>
-              {tempoRestante > 0 ? (
-                <span>⏰ Tempo restante para pagamento: <strong className="text-base">{formatarTempo(tempoRestante)}</strong></span>
-              ) : (
-                <span>⚠️ Tempo limite para realizar o PIX expirou!</span>
               )}
-            </div>
+            </aside>
 
-            <div className="my-4 text-center">
-              <p className="text-sm text-gray-600 mb-1">Valor Total da Encomenda (com taxa):</p>
-              <p className="text-3xl font-extrabold text-pink-600">
-                R$ {calcularTotal().toFixed(2).replace('.', ',')}
-              </p>
+          </div>
+        </main>
 
-              <div className="my-4 flex justify-center">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(CHAVE_PIX)}`}
-                  alt="QR Code PIX"
-                  className={`p-2 border rounded-xl shadow-sm bg-white transition ${
-                    tempoRestante === 0 ? 'opacity-20 grayscale' : 'border-pink-200'
-                  }`}
-                />
+        {/* Modal PIX */}
+        {mostrarModalPix && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-pink-100">
+              <div className="flex justify-between items-center pb-3 border-b">
+                <h3 className="text-xl font-bold text-gray-800">Pagamento via PIX</h3>
+                <button 
+                  onClick={() => setMostrarModalPix(false)}
+                  className="text-gray-400 hover:text-gray-600 font-bold text-lg"
+                >
+                  ✕
+                </button>
               </div>
 
-              <p className="text-xs text-gray-500 mb-2">Escaneie o QR Code acima ou copie a Chave Aleatória abaixo:</p>
-
-              <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs font-mono break-all text-gray-700 flex items-center justify-between gap-2">
-                <span>{CHAVE_PIX}</span>
+              <div className={`mt-3 p-2.5 rounded-xl text-center text-sm font-bold border transition ${
+                tempoRestante > 60 
+                  ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                  : 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse'
+              }`}>
+                {tempoRestante > 0 ? (
+                  <span>⏰ Tempo restante para pagamento: <strong className="text-base">{formatarTempo(tempoRestante)}</strong></span>
+                ) : (
+                  <span>⚠️ Tempo limite para realizar o PIX expirou!</span>
+                )}
               </div>
 
-              <button
-                onClick={copiarChavePix}
-                disabled={tempoRestante === 0}
-                className="mt-3 w-full bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {chaveCopiada ? '✅ Chave Copiada!' : '📋 Copiar Chave PIX'}
-              </button>
-            </div>
+              <div className="my-4 text-center">
+                <p className="text-sm text-gray-600 mb-1">Valor Total da Encomenda (com taxa):</p>
+                <p className="text-3xl font-extrabold text-pink-600">
+                  R$ {calcularTotal().toFixed(2).replace('.', ',')}
+                </p>
 
-            <div className="border-t pt-4 space-y-2">
-              <p className="text-xs text-center text-amber-700 bg-amber-50 p-2.5 rounded-lg font-medium border border-amber-200">
-                ⚠️ Após efetuar o PIX, clique no botão abaixo para confirmar a encomenda com o comprovante no WhatsApp.
-              </p>
+                <div className="my-4 flex justify-center">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(CHAVE_PIX)}`}
+                    alt="QR Code PIX"
+                    className={`p-2 border rounded-xl shadow-sm bg-white transition ${
+                      tempoRestante === 0 ? 'opacity-20 grayscale' : 'border-pink-200'
+                    }`}
+                  />
+                </div>
 
-              {tempoRestante > 0 ? (
+                <p className="text-xs text-gray-500 mb-2">Escaneie o QR Code acima ou copie a Chave Aleatória abaixo:</p>
+
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs font-mono break-all text-gray-700 flex items-center justify-between gap-2">
+                  <span>{CHAVE_PIX}</span>
+                </div>
+
                 <button
-                  onClick={enviarPedidoWhatsApp}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95"
+                  onClick={copiarChavePix}
+                  disabled={tempoRestante === 0}
+                  className="mt-3 w-full bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Enviar Encomenda e Comprovante no WhatsApp
+                  {chaveCopiada ? '✅ Chave Copiada!' : '📋 Copiar Chave PIX'}
                 </button>
-              ) : (
-                <button
-                  onClick={reiniciarTempoPix}
-                  className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95"
-                >
-                  🔄 Tentar Novamente / Recarregar Tempo
-                </button>
-              )}
+              </div>
+
+              <div className="border-t pt-4 space-y-2">
+                <p className="text-xs text-center text-amber-700 bg-amber-50 p-2.5 rounded-lg font-medium border border-amber-200">
+                  ⚠️ Após efetuar o PIX, clique no botão abaixo para confirmar a encomenda com o comprovante no WhatsApp.
+                </p>
+
+                {tempoRestante > 0 ? (
+                  <button
+                    onClick={enviarPedidoWhatsApp}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95"
+                  >
+                    Enviar Encomenda e Comprovante no WhatsApp
+                  </button>
+                ) : (
+                  <button
+                    onClick={reiniciarTempoPix}
+                    className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md active:scale-95"
+                  >
+                    🔄 Tentar Novamente / Recarregar Tempo
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Barra Flutuante Mobile */}
-      {carrinho.length > 0 && (
-        <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
-          <button
-            onClick={RolarParaCarrinho}
-            className="w-full bg-pink-600 text-white font-bold py-3.5 px-5 rounded-2xl shadow-2xl flex items-center justify-between border border-pink-400 active:scale-95 transition"
-          >
-            <div className="flex items-center gap-2">
-              <span className="bg-white text-pink-600 text-xs font-extrabold w-6 h-6 rounded-full flex items-center justify-center">
-                {totalItensCarrinho}
+        {/* Barra Flutuante Mobile */}
+        {carrinho.length > 0 && (
+          <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
+            <button
+              onClick={RolarParaCarrinho}
+              className="w-full bg-pink-600 text-white font-bold py-3.5 px-5 rounded-2xl shadow-2xl flex items-center justify-between border border-pink-400 active:scale-95 transition"
+            >
+              <div className="flex items-center gap-2">
+                <span className="bg-white text-pink-600 text-xs font-extrabold w-6 h-6 rounded-full flex items-center justify-center">
+                  {totalItensCarrinho}
+                </span>
+                <span>Ver Encomenda</span>
+              </div>
+              <span className="text-pink-100 font-extrabold">
+                R$ {calcularTotal().toFixed(2).replace('.', ',')}
               </span>
-              <span>Ver Encomenda</span>
-            </div>
-            <span className="text-pink-100 font-extrabold">
-              R$ {calcularTotal().toFixed(2).replace('.', ',')}
-            </span>
-          </button>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Rodapé Oficial com Direitos Reservados */}
+      <footer className="bg-amber-50/60 border-t border-pink-100 py-8 px-4 text-center mt-12">
+        <div className="max-w-4xl mx-auto flex flex-col items-center justify-center gap-2">
+          <p 
+            className="text-xl tracking-wide select-none"
+            style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}
+          >
+            Caseirinhos da Beth
+          </p>
+          <p className="text-xs text-pink-900/70 font-medium">
+            Bolos caseiros e especiais feitos com muito amor para você e sua família.
+          </p>
+          <div className="w-12 h-0.5 bg-pink-200 my-1"></div>
+          <p className="text-xs text-gray-500">
+            © {new Date().getFullYear()} Caseirinhos da Beth. Todos os direitos reservados.
+          </p>
         </div>
-      )}
+      </footer>
 
     </div>
   );
