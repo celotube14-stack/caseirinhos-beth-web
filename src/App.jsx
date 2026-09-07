@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth, storage } from './firebase';
+import { db, auth } from './firebase';
 import { 
   collection, 
   onSnapshot, 
@@ -8,11 +8,6 @@ import {
   deleteDoc, 
   doc 
 } from 'firebase/firestore';
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL 
-} from 'firebase/storage';
 import { 
   signInWithEmailAndPassword, 
   signOut, 
@@ -31,14 +26,13 @@ export default function App() {
   const [senha, setSenha] = useState('');
   const [erroLogin, setErroLogin] = useState('');
 
-  // Estados do Painel CRUD Admin
+  // Estados do Painel CRUD Admin (com destaque)
   const [boloEditando, setBoloEditando] = useState(null);
   const [nomeForm, setNomeForm] = useState('');
   const [precoForm, setPrecoForm] = useState('');
   const [categoriaForm, setCategoriaForm] = useState('Bolos Tradicionais');
   const [descricaoForm, setDescricaoForm] = useState('');
-  const [arquivoImagem, setArquivoImagem] = useState(null);
-  const [enviandoImagem, setEnviandoImagem] = useState(false);
+  const [destaqueForm, setDestaqueForm] = useState(false);
 
   // Filtros, Busca e Layout de Visualização
   const [categoriaAtiva, setCategoriaAtiva] = useState('Todas');
@@ -51,13 +45,15 @@ export default function App() {
   // Toast Notificação
   const [toastMsg, setToastMsg] = useState('');
 
-  // Checkout
+  // Checkout & Agendamento
   const [nomeCliente, setNomeCliente] = useState('');
   const [enderecoCliente, setEnderecoCliente] = useState('');
   const [formaEntrega, setFormaEntrega] = useState('entrega');
   const [formaPagamento, setFormaPagamento] = useState('Pix');
   const [precisaTroco, setPrecisaTroco] = useState('');
   const [observacoes, setObservacoes] = useState('');
+  const [dataDesejada, setDataDesejada] = useState('');
+  const [horarioDesejado, setHorarioDesejado] = useState('');
 
   // Taxa de Entrega Fixa
   const VALOR_TAXA_ENTREGA = 7.00;
@@ -65,7 +61,7 @@ export default function App() {
   // Modal do PIX e Temporizador (5 Minutos)
   const [mostrarModalPix, setMostrarModalPix] = useState(false);
   const [chaveCopiada, setChaveCopiada] = useState(false);
-  const [tempoRestante, setTempoRestante] = useState(300); // 300 segundos = 5 minutos
+  const [tempoRestante, setTempoRestante] = useState(300);
 
   const NUMERO_WHATSAPP = "5511996808580"; 
   const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
@@ -110,7 +106,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Busca do Firestore EM TEMPO REAL (onSnapshot)
+  // Busca do Firestore EM TEMPO REAL
   useEffect(() => {
     setLoading(true);
     const bolosRef = collection(db, "bolos");
@@ -127,7 +123,7 @@ export default function App() {
             preco: parseFloat(data.Preço || data.preco || data.Preco) || 0,
             categoria: data.Categoria || data.categoria || "Geral",
             descricao: data.Descrição || data.descricao || data.Descricao || "",
-            imageUrl: data.imageUrl || data.Imagem || "",
+            destaque: data.Destaque || data.destaque || false,
             ativo: data.Ativo !== undefined ? data.Ativo : (data.ativo !== undefined ? data.ativo : true),
           });
         });
@@ -162,32 +158,11 @@ export default function App() {
     exibirToast("Você saiu do modo Admin.");
   };
 
-  const handleUploadImagem = async (file) => {
-    if (!file) return "";
-    setEnviandoImagem(true);
-    try {
-      const storageRef = ref(storage, `bolos/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      setEnviandoImagem(false);
-      return url;
-    } catch (error) {
-      console.error("Erro no upload:", error);
-      setEnviandoImagem(false);
-      return "";
-    }
-  };
-
   const handleSalvarBolo = async (e) => {
     e.preventDefault();
     if (!nomeForm || !precoForm) {
       alert("Preencha o nome e o preço.");
       return;
-    }
-
-    let urlFinal = boloEditando ? boloEditando.imageUrl : "";
-    if (arquivoImagem) {
-      urlFinal = await handleUploadImagem(arquivoImagem);
     }
 
     const dadosBolo = {
@@ -196,7 +171,8 @@ export default function App() {
       preco: parseFloat(precoForm),
       categoria: categoriaForm,
       descricao: descricaoForm,
-      imageUrl: urlFinal,
+      Destaque: destaqueForm,
+      destaque: destaqueForm,
       Ativo: true,
       ativo: true
     };
@@ -213,7 +189,7 @@ export default function App() {
       resetFormAdmin();
     } catch (error) {
       console.error("Erro detalhado ao salvar/editar:", error);
-      alert("Erro ao salvar produto no banco. Veja o console (F12) para detalhes.");
+      alert("Erro ao salvar produto no banco.");
     }
   };
 
@@ -223,6 +199,7 @@ export default function App() {
     setPrecoForm(bolo.preco !== undefined ? bolo.preco : (bolo.Preço || ""));
     setCategoriaForm(bolo.categoria || bolo.Categoria || "Bolos Tradicionais");
     setDescricaoForm(bolo.descricao || bolo.Descrição || "");
+    setDestaqueForm(bolo.destaque !== undefined ? bolo.destaque : (bolo.Destaque || false));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -243,7 +220,7 @@ export default function App() {
     setPrecoForm('');
     setCategoriaForm('Bolos Tradicionais');
     setDescricaoForm('');
-    setArquivoImagem(null);
+    setDestaqueForm(false);
   };
 
   const exibirToast = (mensagem) => {
@@ -311,6 +288,10 @@ export default function App() {
       alert("Por favor, digite seu endereço de entrega.");
       return false;
     }
+    if (!dataDesejada || !horarioDesejado) {
+      alert("Por favor, informe a Data e o Horário desejados para a encomenda.");
+      return false;
+    }
     return true;
   };
 
@@ -334,6 +315,7 @@ export default function App() {
   const enviarPedidoWhatsApp = () => {
     let mensagem = `*Novo Pedido (Sob Encomenda) - Caseirinhos da Beth*\n\n`;
     mensagem += `*Cliente:* ${nomeCliente}\n`;
+    mensagem += `*Data para Encomenda:* ${dataDesejada.split('-').reverse().join('/')} às ${horarioDesejado}\n`;
     mensagem += `*Forma:* ${formaEntrega === 'entrega' ? 'Entrega (Redondezas)' : 'Retirada no local'}\n`;
     
     if (formaEntrega === 'entrega') {
@@ -388,7 +370,7 @@ export default function App() {
       {/* Header Estilizado */}
       <header className="bg-amber-50/80 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
         
-        {/* Botão de Login Admin Discreto no Canto Superior */}
+        {/* Botão de Login Admin Discreto */}
         <div className="absolute top-3 right-4 z-10">
           {isAdmin ? (
             <div className="flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full border border-pink-200 shadow-sm">
@@ -445,10 +427,9 @@ export default function App() {
             Bolos Caseiros e Especiais | Feitos com amor
           </p>
 
-          {/* Aviso Destacado de Sob Encomenda */}
           <div className="mt-3 bg-amber-100 text-amber-900 border border-amber-300 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-2">
             <span>📅</span>
-            <span>Trabalhamos exclusivamente <strong>Sob Encomenda</strong> (Não temos a pronta entrega)</span>
+            <span>Trabalhamos exclusivamente <strong>Sob Encomenda</strong></span>
           </div>
 
           <span className={`inline-flex items-center gap-2 mt-3 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
@@ -463,7 +444,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* Modal / Janela Flutuante de Login Admin */}
+      {/* Modal Login Admin */}
       {mostrarModalLogin && !isAdmin && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl border border-pink-100">
@@ -529,7 +510,7 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto p-6">
 
-        {/* PAINEL ADMIN: Cadastrar/Editar Produto */}
+        {/* PAINEL ADMIN */}
         {isAdmin && (
           <section className="bg-white rounded-xl shadow-md p-6 border-2 border-pink-300 mb-8">
             <h2 className="text-xl font-bold text-pink-700 mb-4 flex items-center gap-2">
@@ -559,19 +540,12 @@ export default function App() {
               <select
                 value={categoriaForm}
                 onChange={(e) => setCategoriaForm(e.target.value)}
-                className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white md:col-span-2"
               >
                 {categorias.filter(c => c !== "Todas").map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
-
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setArquivoImagem(e.target.files[0])}
-                className="text-sm p-2 border border-pink-200 rounded-lg"
-              />
 
               <textarea
                 placeholder="Descrição dos ingredientes..."
@@ -581,13 +555,25 @@ export default function App() {
                 className="md:col-span-2 text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
               />
 
+              <div className="md:col-span-2 flex items-center gap-2 bg-pink-50 p-3 rounded-lg border border-pink-100">
+                <input
+                  type="checkbox"
+                  id="chkDestaque"
+                  checked={destaqueForm}
+                  onChange={(e) => setDestaqueForm(e.target.checked)}
+                  className="w-4 h-4 text-pink-600 rounded focus:ring-pink-500"
+                />
+                <label htmlFor="chkDestaque" className="text-sm font-semibold text-gray-700 cursor-pointer">
+                  Marcar como Mais Vendido / Destaque ⭐
+                </label>
+              </div>
+
               <div className="md:col-span-2 flex gap-3">
                 <button
                   type="submit"
-                  disabled={enviandoImagem}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow"
                 >
-                  {enviandoImagem ? "Salvando foto..." : boloEditando ? "Atualizar Bolo" : "Cadastrar Bolo"}
+                  {boloEditando ? "Atualizar Bolo" : "Cadastrar Bolo"}
                 </button>
                 
                 {boloEditando && (
@@ -606,7 +592,7 @@ export default function App() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Seção Principal do Cardápio */}
+          {/* Cardápio */}
           <section className="md:col-span-2">
             
             <div className="mb-4">
@@ -683,15 +669,14 @@ export default function App() {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {bolosFiltrados.map((bolo) => (
-                  <div key={bolo.id} className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition">
+                  <div key={bolo.id} className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition relative">
+                    {bolo.destaque && (
+                      <span className="absolute -top-2.5 -right-2 bg-amber-400 text-amber-950 font-bold text-[10px] px-3 py-1 rounded-full shadow-md border border-amber-200 flex items-center gap-1">
+                        ⭐ Mais Vendido
+                      </span>
+                    )}
+
                     <div>
-                      {bolo.imageUrl && (
-                        <img 
-                          src={bolo.imageUrl} 
-                          alt={bolo.nome} 
-                          className="w-full h-36 object-cover rounded-lg mb-3"
-                        />
-                      )}
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h3 className="text-xl font-bold text-gray-800">{bolo.nome}</h3>
                         <span className="text-xs bg-pink-100 text-pink-600 font-semibold px-2.5 py-1 rounded-full h-fit whitespace-nowrap">
@@ -717,7 +702,6 @@ export default function App() {
                           + Encomendar
                         </button>
 
-                        {/* Botões de Ação Admin no Card */}
                         {isAdmin && (
                           <div className="flex gap-1">
                             <button
@@ -750,6 +734,11 @@ export default function App() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="text-base font-bold text-gray-800">{bolo.nome}</h3>
+                        {bolo.destaque && (
+                          <span className="bg-amber-100 text-amber-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-200">
+                            ⭐ Mais Vendido
+                          </span>
+                        )}
                         <span className="text-[10px] bg-pink-100 text-pink-600 font-semibold px-2 py-0.5 rounded-full">
                           {bolo.categoria}
                         </span>
@@ -795,7 +784,7 @@ export default function App() {
             )}
           </section>
 
-          {/* Seção do Carrinho / Pedido */}
+          {/* Carrinho / Pedido */}
           <aside id="carrinho-secao" className="bg-white rounded-xl shadow p-6 border border-pink-100 h-fit sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
             <h2 className="text-2xl font-bold text-gray-800 mb-2 pb-2 border-b">Sua Encomenda</h2>
             
@@ -836,7 +825,6 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Subtotal, Taxa e Total */}
                 <div className="pt-2 border-t space-y-1 text-sm text-gray-600">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
@@ -856,7 +844,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Form de Checkout */}
                 <div className="pt-2 border-t space-y-3">
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Seu Nome *</label>
@@ -867,6 +854,28 @@ export default function App() {
                       onChange={(e) => setNomeCliente(e.target.value)}
                       className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-pink-500"
                     />
+                  </div>
+
+                  {/* Agendamento de Data e Horário */}
+                  <div className="grid grid-cols-2 gap-2 bg-pink-50/60 p-2.5 rounded-xl border border-pink-100">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">📅 Para qual Data? *</label>
+                      <input
+                        type="date"
+                        value={dataDesejada}
+                        onChange={(e) => setDataDesejada(e.target.value)}
+                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:border-pink-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">⏰ Qual Horário? *</label>
+                      <input
+                        type="time"
+                        value={horarioDesejado}
+                        onChange={(e) => setHorarioDesejado(e.target.value)}
+                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:border-pink-500"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -924,7 +933,7 @@ export default function App() {
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Observações da Encomenda</label>
                     <textarea
-                      placeholder="Ex: Data desejada para entrega, sem canela..."
+                      placeholder="Ex: Sem canela, escrever Parabéns no topo..."
                       value={observacoes}
                       onChange={(e) => setObservacoes(e.target.value)}
                       rows={2}
@@ -949,10 +958,10 @@ export default function App() {
         </div>
       </main>
 
-      {/* Modal / Janela Flutuante do PIX com Timer de 5 Minutos */}
+      {/* Modal PIX */}
       {mostrarModalPix && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-pink-100 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-pink-100">
             <div className="flex justify-between items-center pb-3 border-b">
               <h3 className="text-xl font-bold text-gray-800">Pagamento via PIX</h3>
               <button 
@@ -1031,7 +1040,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Barra Flutuante no Mobile */}
+      {/* Barra Flutuante Mobile */}
       {carrinho.length > 0 && (
         <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
           <button
