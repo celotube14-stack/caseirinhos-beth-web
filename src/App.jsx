@@ -88,10 +88,6 @@ export default function App() {
     return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
   };
 
-  const reiniciarTempoPix = () => {
-    setTempoRestante(300);
-  };
-
   useEffect(() => {
     const checarHorario = () => {
       const horaAtual = new Date().getHours();
@@ -375,7 +371,6 @@ export default function App() {
           )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
-            
             <div className="flex items-center gap-2 mb-1 text-rose-700 opacity-90">
               <span className="h-[1.5px] w-8 bg-rose-600 rounded-full"></span>
               <svg className="w-5 h-5 fill-rose-600" viewBox="0 0 24 24">
@@ -496,7 +491,7 @@ export default function App() {
           </div>
         )}
 
-        <main className="max-w-6xl mx-auto p-6">
+        <main className="max-w-7xl mx-auto p-4 md:p-6">
 
           {/* PAINEL ADMIN */}
           {isAdmin && (
@@ -578,80 +573,69 @@ export default function App() {
             </section>
           )}
 
-          {/* NOVO LAYOUT COM BARRA LATERAL ESQUERDA PARA CATEGORIAS */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+          {/* ESTRUTURA PRINCIPAL EM GRID: 2 COLUNAS CARDÁPIO + 1 COLUNA CARRINHO NO PC */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             
-            {/* BARRA LATERAL ESQUERDA: Categorias e Filtros */}
-            <aside className="md:col-span-1 bg-white rounded-xl shadow p-5 border border-pink-100 sticky top-6">
-              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 pb-2 border-b border-gray-100 flex items-center gap-1.5">
-                <span>📑</span> Categorias
-              </h3>
+            {/* COLUNA ESQUERDA: CARDÁPIO */}
+            <div className={carrinho.length > 0 ? "lg:col-span-2" : "lg:col-span-3"}>
               
-              <div className="flex flex-col gap-2">
+              {/* Filtros de Categorias em Carrossel/Abas */}
+              <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
                 {categorias.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setCategoriaAtiva(cat)}
-                    className={`w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-between ${
+                    className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition shadow-sm ${
                       categoriaAtiva.toLowerCase() === cat.toLowerCase()
-                        ? 'bg-pink-600 text-white shadow-sm'
-                        : 'bg-pink-50/50 text-pink-700 hover:bg-pink-100/70'
+                        ? 'bg-pink-600 text-white'
+                        : 'bg-white text-pink-700 border border-pink-200 hover:bg-pink-100'
                     }`}
                   >
-                    <span>{cat}</span>
-                    {categoriaAtiva.toLowerCase() === cat.toLowerCase() && (
-                      <span className="text-xs">•</span>
-                    )}
+                    {cat}
                   </button>
                 ))}
               </div>
 
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Exibição</span>
-                <div className="bg-gray-50 p-1 rounded-xl border border-gray-200 flex items-center gap-1">
-                  <button
-                    onClick={() => setModoVisualizacao('grade')}
-                    title="Visualização em Cards"
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition ${
-                      modoVisualizacao === 'grade'
-                        ? 'bg-pink-500 text-white shadow-sm'
-                        : 'text-gray-500 hover:text-pink-600'
-                    }`}
-                  >
-                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                      <path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/>
-                    </svg>
-                    <span>Cards</span>
-                  </button>
-                  <button
-                    onClick={() => setModoVisualizacao('lista')}
-                    title="Visualização em Lista"
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition ${
-                      modoVisualizacao === 'lista'
-                        ? 'bg-pink-500 text-white shadow-sm'
-                        : 'text-gray-500 hover:text-pink-600'
-                    }`}
-                  >
-                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                      <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
-                    </svg>
-                    <span>Lista</span>
-                  </button>
-                </div>
-              </div>
-            </aside>
-
-            {/* ÁREA PRINCIPAL: Busca + Listagem de Bolos */}
-            <section className="md:col-span-3">
-              
-              <div className="mb-4">
+              {/* Barra de Busca + Modo de Exibição */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <input
                   type="text"
                   placeholder="🔍 Buscar por sabor (ex: Nutella, Cenoura, Milho)..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-pink-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white shadow-sm"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-pink-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white shadow-sm"
                 />
+
+                <div className="bg-white p-1 rounded-xl border border-pink-200 flex items-center justify-center gap-1 self-end sm:self-auto shadow-sm">
+                  <button
+                    onClick={() => setModoVisualizacao('grade')}
+                    title="Visualização em Cards"
+                    className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+                      modoVisualizacao === 'grade'
+                        ? 'bg-pink-500 text-white'
+                        : 'text-gray-500 hover:text-pink-600'
+                    }`}
+                  >
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/>
+                    </svg>
+                    <span className="hidden sm:inline">Cards</span>
+                  </button>
+                  <button
+                    onClick={() => setModoVisualizacao('lista')}
+                    title="Visualização em Lista"
+                    className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+                      modoVisualizacao === 'lista'
+                        ? 'bg-pink-500 text-white'
+                        : 'text-gray-500 hover:text-pink-600'
+                    }`}
+                  >
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
+                    </svg>
+                    <span className="hidden sm:inline">Lista</span>
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center justify-between mb-4">
@@ -662,7 +646,8 @@ export default function App() {
                   Feitos sob encomenda 🍰
                 </span>
               </div>
-              
+
+              {/* Lista do Cardápio */}
               {loading ? (
                 <p className="text-gray-500">Carregando delícias...</p>
               ) : bolosFiltrados.length === 0 ? (
@@ -671,7 +656,7 @@ export default function App() {
                 </div>
               ) : modoVisualizacao === 'grade' ? (
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {bolosFiltrados.map((bolo) => (
                     <div key={bolo.id} className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition relative">
                       {bolo.destaque && (
@@ -700,7 +685,12 @@ export default function App() {
                         
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => adicionarAoCarrinho(bolo)}
+                            onClick={() => {
+                              adicionarAoCarrinho(bolo);
+                              if (window.innerWidth < 1024) {
+                                setTimeout(() => RolarParaCarrinho(), 200);
+                              }
+                            }}
                             className="bg-pink-500 hover:bg-pink-600 text-white font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow-sm"
                           >
                             + Encomendar
@@ -758,7 +748,12 @@ export default function App() {
                         </span>
                         
                         <button
-                          onClick={() => adicionarAoCarrinho(bolo)}
+                          onClick={() => {
+                            adicionarAoCarrinho(bolo);
+                            if (window.innerWidth < 1024) {
+                              setTimeout(() => RolarParaCarrinho(), 200);
+                            }
+                          }}
                           className="bg-pink-500 hover:bg-pink-600 text-white font-medium text-xs px-3 py-2 rounded-lg transition active:scale-95 shadow-sm"
                         >
                           + Encomendar
@@ -786,15 +781,274 @@ export default function App() {
                 </div>
 
               )}
-            </section>
+            </div>
+
+            {/* COLUNA DIREITA: SEÇÃO DO CARRINHO E CHECKOUT */}
+            {carrinho.length > 0 && (
+              <aside id="carrinho-secao" className="lg:col-span-1 lg:sticky lg:top-6 transition-all">
+                <section className="bg-white rounded-2xl shadow-lg border border-pink-200 p-5">
+                  <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
+                    <span>🛒</span> Seus Encomendas ({totalItensCarrinho})
+                  </h2>
+
+                  <div className="divide-y divide-gray-100 mb-6 max-h-60 overflow-y-auto pr-1">
+                    {carrinho.map((item) => (
+                      <div key={item.id} className="py-3 flex items-center justify-between gap-2">
+                        <div>
+                          <h4 className="font-bold text-gray-800 text-sm">{item.nome}</h4>
+                          <p className="text-[11px] text-gray-500">
+                            R$ {item.preco.toFixed(2).replace('.', ',')} un.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1 bg-pink-50 border border-pink-200 rounded-lg px-1.5 py-0.5">
+                            <button
+                              onClick={() => alterarQuantidade(item.id, -1)}
+                              className="w-5 h-5 flex items-center justify-center font-bold text-pink-700 hover:bg-pink-200 rounded transition text-xs"
+                            >
+                              -
+                            </button>
+                            <span className="text-xs font-bold text-gray-800 w-4 text-center">
+                              {item.quantidade}
+                            </span>
+                            <button
+                              onClick={() => alterarQuantidade(item.id, 1)}
+                              className="w-5 h-5 flex items-center justify-center font-bold text-pink-700 hover:bg-pink-200 rounded transition text-xs"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <span className="font-bold text-pink-600 text-sm">
+                            R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Formulário de Encomenda */}
+                  <div className="bg-pink-50/50 p-4 rounded-xl border border-pink-100 space-y-3 mb-4">
+                    <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider">
+                      📋 Dados do Agendamento
+                    </h3>
+
+                    <div className="space-y-2.5">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Seu Nome *</label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Maria Silva"
+                          value={nomeCliente}
+                          onChange={(e) => setNomeCliente(e.target.value)}
+                          className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Forma de Retirada/Entrega</label>
+                        <select
+                          value={formaEntrega}
+                          onChange={(e) => setFormaEntrega(e.target.value)}
+                          className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                        >
+                          <option value="entrega">Entrega (Redondezas - R$ 7,00)</option>
+                          <option value="retirada">Retirada no Local (Sem Taxa)</option>
+                        </select>
+                      </div>
+
+                      {formaEntrega === 'entrega' && (
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Endereço de Entrega *</label>
+                          <input
+                            type="text"
+                            placeholder="Rua, Número e Bairro"
+                            value={enderecoCliente}
+                            onChange={(e) => setEnderecoCliente(e.target.value)}
+                            className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                          />
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Data *</label>
+                          <input
+                            type="date"
+                            value={dataDesejada}
+                            onChange={(e) => setDataDesejada(e.target.value)}
+                            className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Horário *</label>
+                          <input
+                            type="time"
+                            value={horarioDesejado}
+                            onChange={(e) => setHorarioDesejado(e.target.value)}
+                            className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Forma de Pagamento</label>
+                        <select
+                          value={formaPagamento}
+                          onChange={(e) => setFormaPagamento(e.target.value)}
+                          className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                        >
+                          <option value="Pix">PIX Antecipado</option>
+                          <option value="Cartão de Crédito">Cartão de Crédito</option>
+                          <option value="Cartão de Débito">Cartão de Débito</option>
+                          <option value="Dinheiro">Dinheiro</option>
+                        </select>
+                      </div>
+
+                      {formaPagamento === 'Dinheiro' && (
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Troco para quanto?</label>
+                          <input
+                            type="text"
+                            placeholder="Ex: R$ 50,00"
+                            value={precisaTroco}
+                            onChange={(e) => setPrecisaTroco(e.target.value)}
+                            className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Observações</label>
+                        <textarea
+                          placeholder="Alguma restrição ou recado..."
+                          value={observacoes}
+                          onChange={(e) => setObservacoes(e.target.value)}
+                          rows={2}
+                          className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Totais e Botão de Finalizar */}
+                  <div className="border-t border-gray-100 pt-3 flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <span>Subtotal:</span>
+                      <span>R$ {calcularSubtotal().toFixed(2).replace('.', ',')}</span>
+                    </div>
+
+                    {formaEntrega === 'entrega' && (
+                      <div className="flex justify-between text-xs text-gray-600">
+                        <span>Taxa de Entrega:</span>
+                        <span>R$ {VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between text-base font-bold text-gray-800 pt-1.5 border-t">
+                      <span>Total:</span>
+                      <span className="text-pink-600">R$ {calcularTotal().toFixed(2).replace('.', ',')}</span>
+                    </div>
+
+                    <button
+                      onClick={processarCheckout}
+                      className="mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition shadow text-center flex items-center justify-center gap-2 text-sm active:scale-98 w-full"
+                    >
+                      <span>📱</span> Finalizar via WhatsApp
+                    </button>
+                  </div>
+                </section>
+              </aside>
+            )}
 
           </div>
+
         </main>
       </div>
 
-      {/* FOOTER / CARRINHO / CHECKOUT (Mantidos estruturalmente iguais) */}
-      <footer className="bg-white border-t border-pink-100 py-6 text-center text-xs text-pink-900/60 mt-12">
+      {/* MODAL DO PIX */}
+      {mostrarModalPix && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center border border-pink-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Pagamento via PIX</h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Copie a chave PIX abaixo para efetuar o pagamento do valor total de <strong>R$ {calcularTotal().toFixed(2).replace('.', ',')}</strong>.
+            </p>
+
+            <div className="bg-pink-50 p-3 rounded-xl border border-pink-200 mb-4">
+              <span className="text-xs font-semibold text-gray-500 block mb-1">Chave PIX (Aleatória)</span>
+              <div className="text-xs font-mono font-bold text-pink-700 break-all select-all">
+                {CHAVE_PIX}
+              </div>
+            </div>
+
+            <button
+              onClick={copiarChavePix}
+              className="w-full bg-pink-100 hover:bg-pink-200 text-pink-800 font-bold py-2.5 rounded-xl text-sm transition mb-3 flex items-center justify-center gap-2"
+            >
+              <span>{chaveCopiada ? "✅ Copiado!" : "📋 Copiar Chave PIX"}</span>
+            </button>
+
+            <div className="text-xs text-gray-400 mb-4">
+              Tempo sugerido para pagamento: <strong className="text-pink-600">{formatarTempo(tempoRestante)}</strong>
+            </div>
+
+            <p className="text-[11px] text-gray-500 mb-4 bg-amber-50 p-2 rounded-lg border border-amber-200">
+              Após realizar o pagamento, clique no botão abaixo para enviar o comprovante e os detalhes do pedido pelo WhatsApp!
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={enviarPedidoWhatsApp}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm transition shadow"
+              >
+                Já fiz o pagamento / Enviar no WhatsApp
+              </button>
+              
+              <button
+                onClick={() => setMostrarModalPix(false)}
+                className="w-full text-xs text-gray-400 hover:text-gray-600 py-1"
+              >
+                Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Botão Flutuante do Carrinho para Mobile */}
+      {carrinho.length > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden">
+          <button
+            onClick={RolarParaCarrinho}
+            className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-5 rounded-2xl shadow-xl flex items-center justify-between border border-pink-400 animate-pulse"
+          >
+            <div className="flex items-center gap-2">
+              <span className="bg-white text-pink-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black">
+                {totalItensCarrinho}
+              </span>
+              <span className="text-sm">Ver Minha Encomenda</span>
+            </div>
+            <span className="text-sm font-black">
+              R$ {calcularTotal().toFixed(2).replace('.', ',')}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Rodapé e Acesso Admin */}
+      <footer className="bg-white border-t border-pink-100 py-6 text-center text-xs text-pink-900/60 mt-12 flex flex-col items-center gap-2">
         <p>Caseirinhos da Beth • Todos os direitos reservados</p>
+        {!isAdmin && (
+          <button 
+            onClick={() => setMostrarModalLogin(true)} 
+            className="text-[10px] text-gray-400 hover:text-pink-600 font-medium"
+          >
+            Área Restrita
+          </button>
+        )}
       </footer>
 
     </div>
