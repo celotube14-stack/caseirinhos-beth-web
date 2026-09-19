@@ -59,7 +59,7 @@ export default function App() {
   const [dataDesejada, setDataDesejada] = useState('');
   const [horarioDesejado, setHorarioDesejado] = useState('');
 
-  const VALOR_TAXA_ENTREGA = 7.00;
+  const VALOR_TAXA_ENTREGA = 7.90;
 
   // Modal do PIX
   const [mostrarModalPix, setMostrarModalPix] = useState(false);
@@ -917,7 +917,7 @@ export default function App() {
                       onChange={(e) => setFormaEntrega(e.target.value)}
                       className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
                     >
-                      <option value="entrega">Entrega no Endereço (+ R$ 7,00)</option>
+                      <option value="entrega">Entrega no Endereço (+ R$ 7,90)</option>
                       <option value="retirada">Retirar no Local (Sem taxa)</option>
                     </select>
                   </div>
