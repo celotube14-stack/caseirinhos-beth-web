@@ -18,6 +18,7 @@ export default function App() {
   const [bolos, setBolos] = useState([]);
   const [carrinho, setCarrinho] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingInicial, setLoadingInicial] = useState(true);
 
   // Autenticação Admin & Modal Login
   const [user, setUser] = useState(null);
@@ -68,6 +69,14 @@ export default function App() {
 
   const NUMERO_WHATSAPP = "5511996808580"; 
   const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
+
+  // Loading de abertura (animação de entrada)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingInicial(false);
+    }, 1800); // Exibe por 1.8s
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (usuarioAtual) => {
@@ -384,6 +393,29 @@ export default function App() {
 
   const categorias = ["Todas", "Bolos Tradicionais", "Bolos Especiais", "Bolos com Cobertura"];
   const isAdmin = user && user.email === "celotube14@gmail.com";
+
+  // TELA DE LOADING ANIMAÇÃO
+  if (loadingInicial) {
+    return (
+      <div className="fixed inset-0 bg-pink-50 flex flex-col items-center justify-center z-50 p-4">
+        <div className="relative flex items-center justify-center mb-6">
+          <div className="w-24 h-24 border-4 border-pink-200 border-t-pink-600 rounded-full animate-spin"></div>
+          <span className="absolute text-4xl animate-bounce">🍰</span>
+        </div>
+
+        <h1 
+          className="text-3xl font-normal tracking-wide text-center"
+          style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}
+        >
+          Caseirinhos da Beth
+        </h1>
+
+        <p className="text-pink-800 text-xs font-semibold tracking-wider mt-2 animate-pulse">
+          Preparando as delícias para você...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-pink-50 font-sans pb-24 md:pb-12 relative flex flex-col justify-between">
