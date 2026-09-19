@@ -47,7 +47,11 @@ export default function App() {
 
   // Checkout & Agendamento
   const [nomeCliente, setNomeCliente] = useState('');
+  const [cepCliente, setCepCliente] = useState('');
+  const [buscandoCep, setBuscandoCep] = useState(false);
   const [enderecoCliente, setEnderecoCliente] = useState('');
+  const [numeroCliente, setNumeroCliente] = useState('');
+  const [complementoCliente, setComplementoCliente] = useState('');
   const [formaEntrega, setFormaEntrega] = useState('entrega');
   const [formaPagamento, setFormaPagamento] = useState('Pix');
   const [precisaTroco, setPrecisaTroco] = useState('');
@@ -129,6 +133,31 @@ export default function App() {
 
     return () => unsubscribe();
   }, []);
+
+  // Busca do CEP via API ViaCEP
+  const buscarCep = async (cep) => {
+    const cepLimpo = cep.replace(/\D/g, '');
+    setCepCliente(cepLimpo);
+
+    if (cepLimpo.length === 8) {
+      setBuscandoCep(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setEnderecoCliente(`${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`);
+          exibirToast("Endereço encontrado!");
+        } else {
+          exibirToast("CEP não encontrado.");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar CEP:", error);
+        exibirToast("Erro ao buscar CEP.");
+      } finally {
+        setBuscandoCep(false);
+      }
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -230,7 +259,7 @@ export default function App() {
       }
       return [...prev, { ...bolo, quantidade: 1 }];
     });
-    exibirToast(`" ${bolo.nome} " adicionado ao pedido!`);
+    exibirToast(`"${bolo.nome}" adicionado ao pedido!`);
   };
 
   const alterarQuantidade = (id, delta) => {
@@ -276,9 +305,15 @@ export default function App() {
       alert("Por favor, digite seu nome antes de enviar o pedido.");
       return false;
     }
-    if (formaEntrega === 'entrega' && !enderecoCliente.trim()) {
-      alert("Por favor, digite seu endereço de entrega.");
-      return false;
+    if (formaEntrega === 'entrega') {
+      if (!enderecoCliente.trim()) {
+        alert("Por favor, preencha o CEP e o endereço de entrega.");
+        return false;
+      }
+      if (!numeroCliente.trim()) {
+        alert("Por favor, digite o número do imóvel.");
+        return false;
+      }
     }
     if (!dataDesejada || !horarioDesejado) {
       alert("Por favor, informe a Data e o Horário desejados para a encomenda.");
@@ -311,7 +346,8 @@ export default function App() {
     mensagem += `*Forma:* ${formaEntrega === 'entrega' ? 'Entrega (Redondezas)' : 'Retirada no local'}\n`;
     
     if (formaEntrega === 'entrega') {
-      mensagem += `*Endereço:* ${enderecoCliente}\n`;
+      mensagem += `*CEP:* ${cepCliente}\n`;
+      mensagem += `*Endereço:* ${enderecoCliente}, Nº ${numeroCliente}${complementoCliente ? ` (${complementoCliente})` : ''}\n`;
     }
     
     mensagem += `\n*Itens Encomendados:*\n`;
@@ -363,11 +399,18 @@ export default function App() {
         {/* Header Estilizado */}
         <header className="bg-amber-50/80 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
           
-          {isAdmin && (
+          {isAdmin ? (
             <div className="absolute top-3 right-4 z-10 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-full border border-pink-200 shadow-sm">
               <span className="text-xs font-bold text-pink-700">Admin Ativo</span>
               <button onClick={handleLogout} className="text-xs text-red-600 hover:underline font-semibold">Sair</button>
             </div>
+          ) : (
+            <button 
+              onClick={() => setMostrarModalLogin(true)} 
+              className="absolute top-3 right-4 text-xs font-semibold text-gray-500 hover:text-pink-600 transition"
+            >
+              🔒 Área Restrita
+            </button>
           )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
@@ -573,13 +616,13 @@ export default function App() {
             </section>
           )}
 
-          {/* ESTRUTURA PRINCIPAL EM GRID: 2 COLUNAS CARDÁPIO + 1 COLUNA CARRINHO NO PC */}
+          {/* ESTRUTURA PRINCIPAL EM GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             
             {/* COLUNA ESQUERDA: CARDÁPIO */}
             <div className={carrinho.length > 0 ? "lg:col-span-2" : "lg:col-span-3"}>
               
-              {/* Filtros de Categorias em Carrossel/Abas */}
+              {/* Filtros de Categorias */}
               <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
                 {categorias.map((cat) => (
                   <button
@@ -764,12 +807,14 @@ export default function App() {
                             <button
                               onClick={() => handleEditarBolo(bolo)}
                               className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-bold px-2 py-1.5 rounded-lg"
+                              title="Editar Produto"
                             >
                               ✏️
                             </button>
                             <button
                               onClick={() => handleDeletarBolo(bolo.id)}
                               className="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold px-2 py-1.5 rounded-lg"
+                              title="Excluir Produto"
                             >
                               🗑️
                             </button>
@@ -779,278 +824,283 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-
               )}
             </div>
 
-            {/* COLUNA DIREITA: SEÇÃO DO CARRINHO E CHECKOUT */}
+            {/* COLUNA DIREITA: CARRINHO / CHECKOUT */}
             {carrinho.length > 0 && (
-              <aside id="carrinho-secao" className="lg:col-span-1 lg:sticky lg:top-6 transition-all">
-                <section className="bg-white rounded-2xl shadow-lg border border-pink-200 p-5">
-                  <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
-                    <span>🛒</span> Seus Encomendas ({totalItensCarrinho})
+              <div id="carrinho-secao" className="lg:col-span-1 bg-white p-5 rounded-2xl shadow-lg border border-pink-100 sticky top-6">
+                <div className="flex items-center justify-between border-b pb-3 mb-4">
+                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    🛒 Seu Pedido ({totalItensCarrinho})
                   </h2>
+                  <button 
+                    onClick={() => setCarrinho([])} 
+                    className="text-xs text-red-500 hover:underline font-semibold"
+                  >
+                    Esvaziar
+                  </button>
+                </div>
 
-                  <div className="divide-y divide-gray-100 mb-6 max-h-60 overflow-y-auto pr-1">
-                    {carrinho.map((item) => (
-                      <div key={item.id} className="py-3 flex items-center justify-between gap-2">
-                        <div>
-                          <h4 className="font-bold text-gray-800 text-sm">{item.nome}</h4>
-                          <p className="text-[11px] text-gray-500">
-                            R$ {item.preco.toFixed(2).replace('.', ',')} un.
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1 bg-pink-50 border border-pink-200 rounded-lg px-1.5 py-0.5">
-                            <button
-                              onClick={() => alterarQuantidade(item.id, -1)}
-                              className="w-5 h-5 flex items-center justify-center font-bold text-pink-700 hover:bg-pink-200 rounded transition text-xs"
-                            >
-                              -
-                            </button>
-                            <span className="text-xs font-bold text-gray-800 w-4 text-center">
-                              {item.quantidade}
-                            </span>
-                            <button
-                              onClick={() => alterarQuantidade(item.id, 1)}
-                              className="w-5 h-5 flex items-center justify-center font-bold text-pink-700 hover:bg-pink-200 rounded transition text-xs"
-                            >
-                              +
-                            </button>
-                          </div>
-
-                          <span className="font-bold text-pink-600 text-sm">
-                            R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}
-                          </span>
-                        </div>
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1 mb-4">
+                  {carrinho.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between text-xs border-b pb-2">
+                      <div className="flex-1 pr-2">
+                        <p className="font-bold text-gray-800">{item.nome}</p>
+                        <p className="text-pink-600 font-semibold">
+                          R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}
+                        </p>
                       </div>
-                    ))}
+
+                      <div className="flex items-center border rounded-lg bg-gray-50">
+                        <button
+                          onClick={() => alterarQuantidade(item.id, -1)}
+                          className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded-l-lg font-bold"
+                        >
+                          -
+                        </button>
+                        <span className="px-2 font-bold text-gray-700">{item.quantidade}</span>
+                        <button
+                          onClick={() => alterarQuantidade(item.id, 1)}
+                          className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded-r-lg font-bold"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* FORMULÁRIO DE CHECKOUT */}
+                <div className="space-y-3 pt-2 border-t">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Seu Nome *</label>
+                    <input
+                      type="text"
+                      placeholder="Como podemos te chamar?"
+                      value={nomeCliente}
+                      onChange={(e) => setNomeCliente(e.target.value)}
+                      className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
+                      required
+                    />
                   </div>
 
-                  {/* Formulário de Encomenda */}
-                  <div className="bg-pink-50/50 p-4 rounded-xl border border-pink-100 space-y-3 mb-4">
-                    <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider">
-                      📋 Dados do Agendamento
-                    </h3>
+                  {/* AGENDAMENTO */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Data Desejada *</label>
+                      <input
+                        type="date"
+                        value={dataDesejada}
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setDataDesejada(e.target.value)}
+                        className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Horário Desejado *</label>
+                      <input
+                        type="time"
+                        value={horarioDesejado}
+                        onChange={(e) => setHorarioDesejado(e.target.value)}
+                        className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
+                        required
+                      />
+                    </div>
+                  </div>
 
-                    <div className="space-y-2.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Entrega ou Retirada?</label>
+                    <select
+                      value={formaEntrega}
+                      onChange={(e) => setFormaEntrega(e.target.value)}
+                      className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                    >
+                      <option value="entrega">Entrega no Endereço (+ R$ 7,00)</option>
+                      <option value="retirada">Retirar no Local (Sem taxa)</option>
+                    </select>
+                  </div>
+
+                  {formaEntrega === 'entrega' && (
+                    <div className="space-y-2 bg-pink-50/50 p-2.5 rounded-xl border border-pink-100">
                       <div>
-                        <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Seu Nome *</label>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">CEP *</label>
                         <input
                           type="text"
-                          placeholder="Ex: Maria Silva"
-                          value={nomeCliente}
-                          onChange={(e) => setNomeCliente(e.target.value)}
+                          maxLength={8}
+                          placeholder="Somente números (ex: 01001000)"
+                          value={cepCliente}
+                          onChange={(e) => buscarCep(e.target.value)}
                           className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
                         />
+                        {buscandoCep && <span className="text-[10px] text-pink-600 font-semibold mt-0.5 block">Buscando endereço...</span>}
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Forma de Retirada/Entrega</label>
-                        <select
-                          value={formaEntrega}
-                          onChange={(e) => setFormaEntrega(e.target.value)}
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Endereço (Rua/Bairro/Cidade)</label>
+                        <input
+                          type="text"
+                          placeholder="Rua, bairro e cidade"
+                          value={enderecoCliente}
+                          onChange={(e) => setEnderecoCliente(e.target.value)}
                           className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
-                        >
-                          <option value="entrega">Entrega (Redondezas - R$ 7,00)</option>
-                          <option value="retirada">Retirada no Local (Sem Taxa)</option>
-                        </select>
+                          required
+                        />
                       </div>
-
-                      {formaEntrega === 'entrega' && (
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Endereço de Entrega *</label>
-                          <input
-                            type="text"
-                            placeholder="Rua, Número e Bairro"
-                            value={enderecoCliente}
-                            onChange={(e) => setEnderecoCliente(e.target.value)}
-                            className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
-                          />
-                        </div>
-                      )}
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Data *</label>
-                          <input
-                            type="date"
-                            value={dataDesejada}
-                            onChange={(e) => setDataDesejada(e.target.value)}
-                            className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Horário *</label>
-                          <input
-                            type="time"
-                            value={horarioDesejado}
-                            onChange={(e) => setHorarioDesejado(e.target.value)}
-                            className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Forma de Pagamento</label>
-                        <select
-                          value={formaPagamento}
-                          onChange={(e) => setFormaPagamento(e.target.value)}
-                          className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
-                        >
-                          <option value="Pix">PIX Antecipado</option>
-                          <option value="Cartão de Crédito">Cartão de Crédito</option>
-                          <option value="Cartão de Débito">Cartão de Débito</option>
-                          <option value="Dinheiro">Dinheiro</option>
-                        </select>
-                      </div>
-
-                      {formaPagamento === 'Dinheiro' && (
-                        <div>
-                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Troco para quanto?</label>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Número *</label>
                           <input
                             type="text"
-                            placeholder="Ex: R$ 50,00"
-                            value={precisaTroco}
-                            onChange={(e) => setPrecisaTroco(e.target.value)}
+                            placeholder="Nº"
+                            value={numeroCliente}
+                            onChange={(e) => setNumeroCliente(e.target.value)}
+                            className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Complemento</label>
+                          <input
+                            type="text"
+                            placeholder="Apt / Bloco"
+                            value={complementoCliente}
+                            onChange={(e) => setComplementoCliente(e.target.value)}
                             className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
                           />
                         </div>
-                      )}
-
-                      <div>
-                        <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Observações</label>
-                        <textarea
-                          placeholder="Alguma restrição ou recado..."
-                          value={observacoes}
-                          onChange={(e) => setObservacoes(e.target.value)}
-                          rows={2}
-                          className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
-                        />
                       </div>
                     </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Forma de Pagamento</label>
+                    <select
+                      value={formaPagamento}
+                      onChange={(e) => setFormaPagamento(e.target.value)}
+                      className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                    >
+                      <option value="Pix">PIX (Chave Antecipada)</option>
+                      <option value="Cartao">Cartão de Crédito / Débito na entrega</option>
+                      <option value="Dinheiro">Dinheiro</option>
+                    </select>
                   </div>
 
-                  {/* Totais e Botão de Finalizar */}
-                  <div className="border-t border-gray-100 pt-3 flex flex-col gap-1.5">
-                    <div className="flex justify-between text-xs text-gray-600">
+                  {formaPagamento === 'Dinheiro' && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Troco para quanto?</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Troco para R$ 50,00"
+                        value={precisaTroco}
+                        onChange={(e) => setPrecisaTroco(e.target.value)}
+                        className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Observações</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Escrever 'Parabéns' na embalagem..."
+                      value={observacoes}
+                      onChange={(e) => setObservacoes(e.target.value)}
+                      className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
+                    />
+                  </div>
+
+                  {/* VALORES E TOTAL */}
+                  <div className="pt-3 border-t space-y-1 text-xs text-gray-600">
+                    <div className="flex justify-between">
                       <span>Subtotal:</span>
                       <span>R$ {calcularSubtotal().toFixed(2).replace('.', ',')}</span>
                     </div>
-
                     {formaEntrega === 'entrega' && (
-                      <div className="flex justify-between text-xs text-gray-600">
+                      <div className="flex justify-between text-pink-600 font-semibold">
                         <span>Taxa de Entrega:</span>
                         <span>R$ {VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}</span>
                       </div>
                     )}
-
-                    <div className="flex justify-between text-base font-bold text-gray-800 pt-1.5 border-t">
-                      <span>Total:</span>
+                    <div className="flex justify-between text-base font-bold text-gray-800 pt-2 border-t">
+                      <span>Total Geral:</span>
                       <span className="text-pink-600">R$ {calcularTotal().toFixed(2).replace('.', ',')}</span>
                     </div>
-
-                    <button
-                      onClick={processarCheckout}
-                      className="mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition shadow text-center flex items-center justify-center gap-2 text-sm active:scale-98 w-full"
-                    >
-                      <span>📱</span> Finalizar via WhatsApp
-                    </button>
                   </div>
-                </section>
-              </aside>
+
+                  <button
+                    onClick={processarCheckout}
+                    className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2 text-sm"
+                  >
+                    <span>Enviar Encomenda no WhatsApp</span>
+                    <span>📲</span>
+                  </button>
+                </div>
+              </div>
             )}
-
           </div>
-
         </main>
       </div>
 
       {/* MODAL DO PIX */}
       {mostrarModalPix && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center border border-pink-100">
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Pagamento via PIX</h3>
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-pink-100 text-center relative">
+            <h3 className="text-xl font-bold text-gray-800 mb-1">Pagamento via PIX</h3>
             <p className="text-xs text-gray-500 mb-4">
-              Copie a chave PIX abaixo para efetuar o pagamento do valor total de <strong>R$ {calcularTotal().toFixed(2).replace('.', ',')}</strong>.
+              Realize a transferência para confirmar o seu agendamento.
             </p>
 
-            <div className="bg-pink-50 p-3 rounded-xl border border-pink-200 mb-4">
-              <span className="text-xs font-semibold text-gray-500 block mb-1">Chave PIX (Aleatória)</span>
-              <div className="text-xs font-mono font-bold text-pink-700 break-all select-all">
+            <div className="bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold p-2.5 rounded-xl mb-4 flex items-center justify-center gap-2">
+              <span>⏱️ Tempo para pagamento:</span>
+              <span className="font-mono text-sm font-bold text-amber-900">{formatarTempo(tempoRestante)}</span>
+            </div>
+
+            <div className="bg-pink-50 p-3 rounded-xl border border-pink-100 mb-4 text-left space-y-1 text-xs">
+              <p className="text-gray-600"><strong>Chave PIX (Aleatória):</strong></p>
+              <p className="font-mono bg-white p-2 rounded border text-[11px] break-all select-all text-gray-800">
                 {CHAVE_PIX}
-              </div>
+              </p>
+              <button
+                onClick={copiarChavePix}
+                className="w-full mt-2 bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1"
+              >
+                {chaveCopiada ? "✓ Chave Copiada!" : "📋 Copiar Chave PIX"}
+              </button>
             </div>
 
-            <button
-              onClick={copiarChavePix}
-              className="w-full bg-pink-100 hover:bg-pink-200 text-pink-800 font-bold py-2.5 rounded-xl text-sm transition mb-3 flex items-center justify-center gap-2"
-            >
-              <span>{chaveCopiada ? "✅ Copiado!" : "📋 Copiar Chave PIX"}</span>
-            </button>
-
-            <div className="text-xs text-gray-400 mb-4">
-              Tempo sugerido para pagamento: <strong className="text-pink-600">{formatarTempo(tempoRestante)}</strong>
+            <div className="text-left text-xs text-gray-600 mb-5 space-y-1">
+              <p><strong>Valor Total:</strong> R$ {calcularTotal().toFixed(2).replace('.', ',')}</p>
+              <p><strong>Beneficiário:</strong> Caseirinhos da Beth</p>
             </div>
 
-            <p className="text-[11px] text-gray-500 mb-4 bg-amber-50 p-2 rounded-lg border border-amber-200">
-              Após realizar o pagamento, clique no botão abaixo para enviar o comprovante e os detalhes do pedido pelo WhatsApp!
-            </p>
-
-            <div className="flex flex-col gap-2">
+            <div className="space-y-2">
               <button
                 onClick={enviarPedidoWhatsApp}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm transition shadow"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow flex items-center justify-center gap-2"
               >
-                Já fiz o pagamento / Enviar no WhatsApp
+                <span>Já fiz o Pix / Enviar Comprovante</span>
+                <span>📲</span>
               </button>
-              
+
               <button
                 onClick={() => setMostrarModalPix(false)}
-                className="w-full text-xs text-gray-400 hover:text-gray-600 py-1"
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-2 rounded-xl text-xs transition"
               >
-                Voltar
+                Cancelar
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Botão Flutuante do Carrinho para Mobile */}
-      {carrinho.length > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden">
-          <button
-            onClick={RolarParaCarrinho}
-            className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-5 rounded-2xl shadow-xl flex items-center justify-between border border-pink-400 animate-pulse"
-          >
-            <div className="flex items-center gap-2">
-              <span className="bg-white text-pink-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black">
-                {totalItensCarrinho}
-              </span>
-              <span className="text-sm">Ver Minha Encomenda</span>
-            </div>
-            <span className="text-sm font-black">
-              R$ {calcularTotal().toFixed(2).replace('.', ',')}
-            </span>
-          </button>
-        </div>
-      )}
-
-      {/* Rodapé e Acesso Admin */}
-      <footer className="bg-white border-t border-pink-100 py-6 text-center text-xs text-pink-900/60 mt-12 flex flex-col items-center gap-2">
-        <p>Caseirinhos da Beth • Todos os direitos reservados</p>
-        {!isAdmin && (
-          <button 
-            onClick={() => setMostrarModalLogin(true)} 
-            className="text-[10px] text-gray-400 hover:text-pink-600 font-medium"
-          >
-            Área Restrita
-          </button>
-        )}
+      {/* FOOTER */}
+      <footer className="mt-12 text-center text-xs text-gray-500 py-6 border-t border-pink-100 bg-white/60">
+        <p>© {new Date().getFullYear()} Caseirinhos da Beth — Todos os direitos reservados.</p>
+        <p className="mt-1">Feito com carinho para adoçar o seu dia 🍰</p>
       </footer>
-
     </div>
   );
 }
