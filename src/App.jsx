@@ -74,7 +74,7 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoadingInicial(false);
-    }, 1800); // Exibe por 1.8s
+    }, 1800);
     return () => clearTimeout(timer);
   }, []);
 
@@ -266,7 +266,7 @@ export default function App() {
           item.id === bolo.id ? { ...item, quantidade: item.quantidade + 1 } : item
         );
       }
-      return [...prev, { ...bolo, quantidade: 1 }];
+      return [...prev, { ...bolo, quantidade: 1, comGranulado: true }];
     });
     exibirToast(`"${bolo.nome}" adicionado ao pedido!`);
   };
@@ -282,6 +282,14 @@ export default function App() {
           return item;
         })
         .filter(Boolean)
+    );
+  };
+
+  const alterarGranulado = (id, valor) => {
+    setCarrinho((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, comGranulado: valor } : item
+      )
     );
   };
 
@@ -361,7 +369,12 @@ export default function App() {
     
     mensagem += `\n*Itens Encomendados:*\n`;
     carrinho.forEach((item) => {
-      mensagem += `• ${item.quantidade}x ${item.nome} (R$ ${(item.preco * item.quantidade).toFixed(2).replace('.', ',')})\n`;
+      let opcaoGranulado = "";
+      if (item.nome.toLowerCase().includes('cenoura')) {
+        opcaoGranulado = item.comGranulado ? " *(Com Granulado)*" : " *(SEM Granulado)*";
+      }
+
+      mensagem += `• ${item.quantidade}x ${item.nome}${opcaoGranulado} (R$ ${(item.preco * item.quantidade).toFixed(2).replace('.', ',')})\n`;
     });
 
     const subtotal = calcularSubtotal();
@@ -889,29 +902,75 @@ export default function App() {
 
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-1 mb-4">
                   {carrinho.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between text-xs border-b pb-2">
-                      <div className="flex-1 pr-2">
-                        <p className="font-bold text-gray-800">{item.nome}</p>
-                        <p className="text-pink-600 font-semibold">
-                          R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}
-                        </p>
+                    <div key={item.id} className="flex flex-col text-xs border-b pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 pr-2">
+                          <p className="font-bold text-gray-800">{item.nome}</p>
+                          <p className="text-pink-600 font-semibold">
+                            R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center border rounded-lg bg-gray-50">
+                          <button
+                            onClick={() => alterarQuantidade(item.id, -1)}
+                            className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded-l-lg font-bold"
+                          >
+                            -
+                          </button>
+                          <span className="px-2 font-bold text-gray-700">{item.quantidade}</span>
+                          <button
+                            onClick={() => alterarQuantidade(item.id, 1)}
+                            className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded-r-lg font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex items-center border rounded-lg bg-gray-50">
-                        <button
-                          onClick={() => alterarQuantidade(item.id, -1)}
-                          className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded-l-lg font-bold"
-                        >
-                          -
-                        </button>
-                        <span className="px-2 font-bold text-gray-700">{item.quantidade}</span>
-                        <button
-                          onClick={() => alterarQuantidade(item.id, 1)}
-                          className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded-r-lg font-bold"
-                        >
-                          +
-                        </button>
-                      </div>
+                      {/* OPÇÃO DE SELEÇÃO DE GRANULADO DESTACADA */}
+                      {item.nome.toLowerCase().includes('cenoura') && (
+                        <div className="mt-2.5 bg-gradient-to-r from-amber-100 to-amber-50 p-3 rounded-xl border-2 border-amber-300 shadow-sm">
+                          <span className="block text-xs font-extrabold text-amber-950 mb-0.5 flex items-center gap-1">
+                            ✨ Deseja granulado por cima?
+                          </span>
+                          <span className="block text-[10px] text-amber-800 font-medium mb-2">
+                            (A escolha não altera o valor do produto)
+                          </span>
+                          
+                          <div className="flex gap-2">
+                            <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-bold cursor-pointer transition ${
+                              item.comGranulado 
+                                ? 'bg-amber-500 text-white border-amber-600 shadow-sm' 
+                                : 'bg-white text-gray-700 border-amber-200 hover:bg-amber-50'
+                            }`}>
+                              <input
+                                type="radio"
+                                name={`granulado-${item.id}`}
+                                checked={item.comGranulado === true}
+                                onChange={() => alterarGranulado(item.id, true)}
+                                className="hidden"
+                              />
+                              Com Granulado
+                            </label>
+
+                            <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-bold cursor-pointer transition ${
+                              !item.comGranulado 
+                                ? 'bg-amber-500 text-white border-amber-600 shadow-sm' 
+                                : 'bg-white text-gray-700 border-amber-200 hover:bg-amber-50'
+                            }`}>
+                              <input
+                                type="radio"
+                                name={`granulado-${item.id}`}
+                                checked={item.comGranulado === false}
+                                onChange={() => alterarGranulado(item.id, false)}
+                                className="hidden"
+                              />
+                              Sem Granulado
+                            </label>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
