@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { db, auth } from './firebase';
 import { 
   collection, 
@@ -307,15 +308,17 @@ export default function App() {
 
   const bolosFiltrados = bolos.filter((b) => {
     if (!b.ativo) return false;
-    const atendeCategoria = categoriaAtiva === 'Todas' || b.categoria.toLowerCase() === categoriaAtiva.toLowerCase();
+    let atendeCategoria = false;
+    if (categoriaAtiva === 'Todas') {
+      atendeCategoria = true;
+    } else if (categoriaAtiva === 'Mais Vendidos') {
+      atendeCategoria = b.destaque === true;
+    } else {
+      atendeCategoria = b.categoria.toLowerCase() === categoriaAtiva.toLowerCase();
+    }
     const atendeBusca = b.nome.toLowerCase().includes(busca.toLowerCase()) || b.descricao.toLowerCase().includes(busca.toLowerCase());
     return atendeCategoria && atendeBusca;
   });
-
-  const RolarParaCarrinho = () => {
-    const el = document.getElementById('carrinho-secao');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
 
   const validarFormulario = () => {
     if (!nomeCliente.trim()) {
@@ -404,7 +407,7 @@ export default function App() {
     setMostrarModalPix(false);
   };
 
-  const categorias = ["Todas", "Bolos Tradicionais", "Bolos Especiais", "Bolos com Cobertura"];
+  const categorias = ["Todas", "Mais Vendidos", "Bolos Tradicionais", "Bolos Especiais", "Bolos com Cobertura"];
   const isAdmin = user && user.email === "celotube14@gmail.com";
 
   // TELA DE LOADING ANIMAÇÃO
@@ -626,7 +629,7 @@ export default function App() {
                   onChange={(e) => setCategoriaForm(e.target.value)}
                   className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white md:col-span-2"
                 >
-                  {categorias.filter(c => c !== "Todas").map(c => (
+                  {categorias.filter(c => c !== "Todas" && c !== "Mais Vendidos").map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
@@ -692,7 +695,7 @@ export default function App() {
                         : 'bg-white text-pink-700 border border-pink-200 hover:bg-pink-100'
                     }`}
                   >
-                    {cat}
+                    {cat === 'Mais Vendidos' ? `⭐ ${cat}` : cat}
                   </button>
                 ))}
               </div>
@@ -748,226 +751,226 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Lista do Cardápio */}
+              {/* Lista do Cardápio com Animação */}
               {loading ? (
                 <p className="text-gray-500">Carregando delícias...</p>
-              ) : bolosFiltrados.length === 0 ? (
-                <div className="bg-white rounded-xl p-8 text-center border border-pink-100 shadow-sm">
-                  <p className="text-gray-500 text-sm">Nenhum bolo encontrado para essa pesquisa ou categoria.</p>
-                </div>
-              ) : modoVisualizacao === 'grade' ? (
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {bolosFiltrados.map((bolo) => (
-                    <div key={bolo.id} className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition relative">
-                      {bolo.destaque && (
-                        <span className="absolute -top-2.5 -right-2 bg-amber-400 text-amber-950 font-bold text-[10px] px-3 py-1 rounded-full shadow-md border border-amber-200 flex items-center gap-1">
-                          ⭐ Mais Vendido
-                        </span>
-                      )}
-
-                      <div>
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="text-xl font-bold text-gray-800">{bolo.nome}</h3>
-                          <span className="text-xs bg-pink-100 text-pink-600 font-semibold px-2.5 py-1 rounded-full h-fit whitespace-nowrap">
-                            {bolo.categoria}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-2">{bolo.descricao}</p>
-                      </div>
-
-                      <div className="mt-5 flex items-center justify-between pt-3 border-t border-gray-100">
-                        <div>
-                          <span className="text-xs text-gray-400 block font-medium">Preço</span>
-                          <span className="text-lg font-bold text-pink-600">
-                            R$ {bolo.preco.toFixed(2).replace('.', ',')}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              adicionarAoCarrinho(bolo);
-                              if (window.innerWidth < 1024) {
-                                setTimeout(() => RolarParaCarrinho(), 200);
-                              }
-                            }}
-                            className="bg-pink-500 hover:bg-pink-600 text-white font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow-sm"
-                          >
-                            + Encomendar
-                          </button>
-
-                          {isAdmin && (
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleEditarBolo(bolo)}
-                                className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-bold px-2 py-2 rounded-lg"
-                                title="Editar Produto"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                onClick={() => handleDeletarBolo(bolo.id)}
-                                className="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold px-2 py-2 rounded-lg"
-                                title="Excluir Produto"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
               ) : (
-
-                <div className="bg-white rounded-xl shadow border border-pink-100 divide-y divide-gray-100">
-                  {bolosFiltrados.map((bolo) => (
-                    <div key={bolo.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-pink-50/50 transition">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-base font-bold text-gray-800">{bolo.nome}</h3>
-                          {bolo.destaque && (
-                            <span className="bg-amber-100 text-amber-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-200">
-                              ⭐ Mais Vendido
-                            </span>
-                          )}
-                          <span className="text-[10px] bg-pink-100 text-pink-600 font-semibold px-2 py-0.5 rounded-full">
-                            {bolo.categoria}
-                          </span>
-                        </div>
-                        {bolo.descricao && (
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{bolo.descricao}</p>
-                        )}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={`${categoriaAtiva}-${busca}-${modoVisualizacao}`}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  >
+                    {bolosFiltrados.length === 0 ? (
+                      <div className="bg-white rounded-xl p-8 text-center border border-pink-100 shadow-sm">
+                        <p className="text-gray-500 text-sm">
+                          Nenhum bolo encontrado para essa pesquisa ou categoria.
+                        </p>
                       </div>
+                    ) : modoVisualizacao === 'grade' ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {bolosFiltrados.map((bolo) => (
+                          <div
+                            key={bolo.id}
+                            className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition relative"
+                          >
+                            {bolo.destaque && (
+                              <span className="absolute -top-2.5 -right-2 bg-amber-400 text-amber-950 font-bold text-[10px] px-3 py-1 rounded-full shadow-md border border-amber-200 flex items-center gap-1">
+                                ⭐ Mais Vendido
+                              </span>
+                            )}
 
-                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-                        <span className="text-base font-bold text-pink-600">
-                          R$ {bolo.preco.toFixed(2).replace('.', ',')}
-                        </span>
-                        
-                        <button
-                          onClick={() => {
-                            adicionarAoCarrinho(bolo);
-                            if (window.innerWidth < 1024) {
-                              setTimeout(() => RolarParaCarrinho(), 200);
-                            }
-                          }}
-                          className="bg-pink-500 hover:bg-pink-600 text-white font-medium text-xs px-3 py-2 rounded-lg transition active:scale-95 shadow-sm"
-                        >
-                          + Encomendar
-                        </button>
+                            <div>
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <h3 className="text-xl font-bold text-gray-800">{bolo.nome}</h3>
+                                <span className="text-xs bg-pink-100 text-pink-600 font-semibold px-2.5 py-1 rounded-full h-fit whitespace-nowrap">
+                                  {bolo.categoria}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-500 mt-2">{bolo.descricao}</p>
+                            </div>
 
-                        {isAdmin && (
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => handleEditarBolo(bolo)}
-                              className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-bold px-2 py-1.5 rounded-lg"
-                              title="Editar Produto"
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              onClick={() => handleDeletarBolo(bolo.id)}
-                              className="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold px-2 py-1.5 rounded-lg"
-                              title="Excluir Produto"
-                            >
-                              🗑️
-                            </button>
+                            <div className="mt-5 flex items-center justify-between pt-3 border-t border-gray-100">
+                              <div>
+                                <span className="text-xs text-gray-400 block font-medium">Preço</span>
+                                <span className="text-lg font-bold text-pink-600">
+                                  R$ {Number(bolo.preco).toFixed(2).replace('.', ',')}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => adicionarAoCarrinho(bolo)}
+                                  className="bg-pink-500 hover:bg-pink-600 text-white font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow-sm text-sm"
+                                >
+                                  + Encomendar
+                                </button>
+
+                                {isAdmin && (
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => handleEditarBolo(bolo)}
+                                      className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-bold px-2 py-2 rounded-lg"
+                                      title="Editar Produto"
+                                    >
+                                      ✏️
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeletarBolo(bolo.id)}
+                                      className="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold px-2 py-2 rounded-lg"
+                                      title="Excluir Produto"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        )}
+                        ))}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ) : (
+                      <div className="bg-white rounded-xl shadow border border-pink-100 divide-y divide-gray-100">
+                        {bolosFiltrados.map((bolo) => (
+                          <div
+                            key={bolo.id}
+                            className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-pink-50/50 transition"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-base font-bold text-gray-800">{bolo.nome}</h3>
+                                {bolo.destaque && (
+                                  <span className="bg-amber-100 text-amber-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-200">
+                                    ⭐ Mais Vendido
+                                  </span>
+                                )}
+                                <span className="text-[10px] bg-pink-100 text-pink-600 font-semibold px-2 py-0.5 rounded-full">
+                                  {bolo.categoria}
+                                </span>
+                              </div>
+                              {bolo.descricao && (
+                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{bolo.descricao}</p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                              <span className="text-base font-bold text-pink-600">
+                                R$ {Number(bolo.preco).toFixed(2).replace('.', ',')}
+                              </span>
+
+                              <button
+                                onClick={() => adicionarAoCarrinho(bolo)}
+                                className="bg-pink-500 hover:bg-pink-600 text-white font-medium text-xs px-3 py-2 rounded-lg transition active:scale-95 shadow-sm"
+                              >
+                                + Encomendar
+                              </button>
+
+                              {isAdmin && (
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => handleEditarBolo(bolo)}
+                                    className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-bold px-2 py-1.5 rounded-lg"
+                                    title="Editar Produto"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeletarBolo(bolo.id)}
+                                    className="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold px-2 py-1.5 rounded-lg"
+                                    title="Excluir Produto"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
               )}
             </div>
 
-            {/* COLUNA DIREITA: CARRINHO / CHECKOUT */}
+            {/* COLUNA DIREITA: CARRINHO */}
             {carrinho.length > 0 && (
-              <div id="carrinho-secao" className="lg:col-span-1 bg-white p-5 rounded-2xl shadow-lg border border-pink-100 sticky top-6">
-                <div className="flex items-center justify-between border-b pb-3 mb-4">
-                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    🛒 Seu Pedido ({totalItensCarrinho})
-                  </h2>
-                  <button 
-                    onClick={() => setCarrinho([])} 
-                    className="text-xs text-red-500 hover:underline font-semibold"
-                  >
-                    Esvaziar
-                  </button>
+              <div id="carrinho-secao" className="lg:col-span-1 bg-white p-5 rounded-2xl shadow-lg border border-pink-200 sticky top-6">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <span>🛒</span> Seu Pedido
+                  </h3>
+                  <span className="text-xs font-semibold bg-pink-100 text-pink-700 px-2.5 py-1 rounded-full">
+                    {totalItensCarrinho} {totalItensCarrinho === 1 ? 'item' : 'itens'}
+                  </span>
                 </div>
 
-                <div className="space-y-3 max-h-60 overflow-y-auto pr-1 mb-4">
+                {/* Itens do Carrinho */}
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
                   {carrinho.map((item) => (
-                    <div key={item.id} className="flex flex-col text-xs border-b pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 pr-2">
-                          <p className="font-bold text-gray-800">{item.nome}</p>
-                          <p className="text-pink-600 font-semibold">
+                    <div key={item.id} className="bg-pink-50/50 p-3 rounded-xl border border-pink-100 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
+                          <h4 className="text-xs font-bold text-gray-800">{item.nome}</h4>
+                          <span className="text-xs font-semibold text-pink-600">
                             R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}
-                          </p>
+                          </span>
                         </div>
 
-                        <div className="flex items-center border rounded-lg bg-gray-50">
+                        <div className="flex items-center gap-1 bg-white border border-pink-200 rounded-lg p-0.5 shadow-sm">
                           <button
                             onClick={() => alterarQuantidade(item.id, -1)}
-                            className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded-l-lg font-bold"
+                            className="w-6 h-6 text-xs font-bold text-gray-600 hover:bg-pink-100 rounded flex items-center justify-center transition"
                           >
                             -
                           </button>
-                          <span className="px-2 font-bold text-gray-700">{item.quantidade}</span>
+                          <span className="text-xs font-bold px-1.5">{item.quantidade}</span>
                           <button
                             onClick={() => alterarQuantidade(item.id, 1)}
-                            className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded-r-lg font-bold"
+                            className="w-6 h-6 text-xs font-bold text-gray-600 hover:bg-pink-100 rounded flex items-center justify-center transition"
                           >
                             +
                           </button>
                         </div>
                       </div>
 
-                      {/* OPÇÃO DE SELEÇÃO DE GRANULADO DESTACADA */}
+                      {/* Bloco Granulado idêntico ao modelo */}
                       {item.nome.toLowerCase().includes('cenoura') && (
-                        <div className="mt-2.5 bg-gradient-to-r from-amber-100 to-amber-50 p-3 rounded-xl border-2 border-amber-300 shadow-sm">
-                          <span className="block text-xs font-extrabold text-amber-950 mb-0.5 flex items-center gap-1">
-                            ✨ Deseja granulado por cima?
-                          </span>
-                          <span className="block text-[10px] text-amber-800 font-medium mb-2">
-                            (A escolha não altera o valor do produto)
-                          </span>
-                          
-                          <div className="flex gap-2">
-                            <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-bold cursor-pointer transition ${
-                              item.comGranulado 
-                                ? 'bg-amber-500 text-white border-amber-600 shadow-sm' 
-                                : 'bg-white text-gray-700 border-amber-200 hover:bg-amber-50'
-                            }`}>
-                              <input
-                                type="radio"
-                                name={`granulado-${item.id}`}
-                                checked={item.comGranulado === true}
-                                onChange={() => alterarGranulado(item.id, true)}
-                                className="hidden"
-                              />
-                              Com Granulado
-                            </label>
+                        <div className="mt-3 p-3 bg-amber-50/70 rounded-2xl border-2 border-amber-200 shadow-sm space-y-2.5">
+                          <div>
+                            <span className="text-xs font-bold text-gray-900 block flex items-center gap-1">
+                              ✨ Deseja granulado por cima?
+                            </span>
+                            <span className="text-[10px] text-gray-500 font-medium">
+                              (A escolha não altera o valor do produto)
+                            </span>
+                          </div>
 
-                            <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-bold cursor-pointer transition ${
-                              !item.comGranulado 
-                                ? 'bg-amber-500 text-white border-amber-600 shadow-sm' 
-                                : 'bg-white text-gray-700 border-amber-200 hover:bg-amber-50'
-                            }`}>
-                              <input
-                                type="radio"
-                                name={`granulado-${item.id}`}
-                                checked={item.comGranulado === false}
-                                onChange={() => alterarGranulado(item.id, false)}
-                                className="hidden"
-                              />
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => alterarGranulado(item.id, true)}
+                              className={`py-2 px-3 rounded-xl text-xs font-bold transition shadow-sm ${
+                                item.comGranulado 
+                                  ? 'bg-amber-500 text-white shadow' 
+                                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                              }`}
+                            >
+                              Com Granulado
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => alterarGranulado(item.id, false)}
+                              className={`py-2 px-3 rounded-xl text-xs font-bold transition shadow-sm ${
+                                !item.comGranulado 
+                                  ? 'bg-amber-500 text-white shadow' 
+                                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                              }`}
+                            >
                               Sem Granulado
-                            </label>
+                            </button>
                           </div>
                         </div>
                       )}
@@ -975,104 +978,116 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* FORMULÁRIO DE CHECKOUT */}
-                <div className="space-y-3 pt-2 border-t">
+                {/* Formulário de Encomenda & Endereço */}
+                <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Seu Nome *</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Seu Nome *</label>
                     <input
                       type="text"
-                      placeholder="Como podemos te chamar?"
+                      placeholder="Nome completo"
                       value={nomeCliente}
                       onChange={(e) => setNomeCliente(e.target.value)}
-                      className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
-                      required
+                      className="w-full text-xs p-2 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
                     />
                   </div>
 
-                  {/* AGENDAMENTO */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Data Desejada *</label>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Data Desejada *</label>
                       <input
                         type="date"
                         value={dataDesejada}
-                        min={new Date().toISOString().split("T")[0]}
                         onChange={(e) => setDataDesejada(e.target.value)}
-                        className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
-                        required
+                        className="w-full text-xs p-2 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Horário Desejado *</label>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Horário *</label>
                       <input
                         type="time"
                         value={horarioDesejado}
                         onChange={(e) => setHorarioDesejado(e.target.value)}
-                        className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
-                        required
+                        className="w-full text-xs p-2 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Entrega ou Retirada?</label>
-                    <select
-                      value={formaEntrega}
-                      onChange={(e) => setFormaEntrega(e.target.value)}
-                      className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
-                    >
-                      <option value="entrega">Entrega no Endereço (+ R$ 7,90)</option>
-                      <option value="retirada">Retirar no Local (Sem taxa)</option>
-                    </select>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Forma de Recebimento</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormaEntrega('entrega')}
+                        className={`text-xs py-2 rounded-lg font-bold border transition ${
+                          formaEntrega === 'entrega'
+                            ? 'bg-pink-600 text-white border-pink-600'
+                            : 'bg-white text-gray-600 border-gray-200'
+                        }`}
+                      >
+                        🚚 Entrega
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormaEntrega('retirada')}
+                        className={`text-xs py-2 rounded-lg font-bold border transition ${
+                          formaEntrega === 'retirada'
+                            ? 'bg-pink-600 text-white border-pink-600'
+                            : 'bg-white text-gray-600 border-gray-200'
+                        }`}
+                      >
+                        🏬 Retirada
+                      </button>
+                    </div>
                   </div>
 
                   {formaEntrega === 'entrega' && (
-                    <div className="space-y-2 bg-pink-50/50 p-2.5 rounded-xl border border-pink-100">
+                    <div className="space-y-2 bg-pink-50/40 p-3 rounded-xl border border-pink-100">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">CEP *</label>
-                        <input
-                          type="text"
-                          maxLength={8}
-                          placeholder="Somente números (ex: 01001000)"
-                          value={cepCliente}
-                          onChange={(e) => buscarCep(e.target.value)}
-                          className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
-                        />
-                        {buscandoCep && <span className="text-[10px] text-pink-600 font-semibold mt-0.5 block">Buscando endereço...</span>}
+                        <label className="block text-[11px] font-bold text-gray-600 mb-0.5">CEP de Entrega *</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            maxLength={9}
+                            placeholder="00000-000"
+                            value={cepCliente}
+                            onChange={(e) => buscarCep(e.target.value)}
+                            className="flex-1 text-xs p-2 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
+                          />
+                          {buscandoCep && <span className="text-xs text-pink-600 animate-pulse self-center">Buscando...</span>}
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Endereço (Rua/Bairro/Cidade)</label>
-                        <input
-                          type="text"
-                          placeholder="Rua, bairro e cidade"
-                          value={enderecoCliente}
-                          onChange={(e) => setEnderecoCliente(e.target.value)}
-                          className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
-                          required
-                        />
-                      </div>
+                      {enderecoCliente && (
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-0.5">Endereço</label>
+                          <input
+                            type="text"
+                            value={enderecoCliente}
+                            onChange={(e) => setEnderecoCliente(e.target.value)}
+                            className="w-full text-xs p-2 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                          />
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-xs font-semibold text-gray-600 mb-1">Número *</label>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-0.5">Número *</label>
                           <input
                             type="text"
                             placeholder="Nº"
                             value={numeroCliente}
                             onChange={(e) => setNumeroCliente(e.target.value)}
-                            className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
-                            required
+                            className="w-full text-xs p-2 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-gray-600 mb-1">Complemento</label>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-0.5">Complemento</label>
                           <input
                             type="text"
                             placeholder="Apt / Bloco"
                             value={complementoCliente}
                             onChange={(e) => setComplementoCliente(e.target.value)}
-                            className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                            className="w-full text-xs p-2 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
                           />
                         </div>
                       </div>
@@ -1080,130 +1095,138 @@ export default function App() {
                   )}
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Forma de Pagamento</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Forma de Pagamento</label>
                     <select
                       value={formaPagamento}
                       onChange={(e) => setFormaPagamento(e.target.value)}
-                      className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500 bg-white"
+                      className="w-full text-xs p-2 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white"
                     >
-                      <option value="Pix">PIX (Chave Antecipada)</option>
-                      <option value="Cartao">Cartão de Crédito / Débito na entrega</option>
+                      <option value="Pix">Pix (Antecipado)</option>
+                      <option value="Cartão de Crédito">Cartão de Crédito na Entrega/Retirada</option>
+                      <option value="Cartão de Débito">Cartão de Débito na Entrega/Retirada</option>
                       <option value="Dinheiro">Dinheiro</option>
                     </select>
                   </div>
 
                   {formaPagamento === 'Dinheiro' && (
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Troco para quanto?</label>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-0.5">Troco para quanto?</label>
                       <input
                         type="text"
-                        placeholder="Ex: Troco para R$ 50,00"
+                        placeholder="Ex: R$ 50,00 ou Não preciso"
                         value={precisaTroco}
                         onChange={(e) => setPrecisaTroco(e.target.value)}
-                        className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
+                        className="w-full text-xs p-2 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
                       />
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Observações</label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Escrever 'Parabéns' na embalagem..."
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Observações</label>
+                    <textarea
+                      placeholder="Ex: Sem açúcar, cartão de parabéns..."
                       value={observacoes}
                       onChange={(e) => setObservacoes(e.target.value)}
-                      className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
+                      rows={2}
+                      className="w-full text-xs p-2 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
                     />
                   </div>
-
-                  {/* VALORES E TOTAL */}
-                  <div className="pt-3 border-t space-y-1 text-xs text-gray-600">
-                    <div className="flex justify-between">
-                      <span>Subtotal:</span>
-                      <span>R$ {calcularSubtotal().toFixed(2).replace('.', ',')}</span>
-                    </div>
-                    {formaEntrega === 'entrega' && (
-                      <div className="flex justify-between text-pink-600 font-semibold">
-                        <span>Taxa de Entrega:</span>
-                        <span>R$ {VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-base font-bold text-gray-800 pt-2 border-t">
-                      <span>Total Geral:</span>
-                      <span className="text-pink-600">R$ {calcularTotal().toFixed(2).replace('.', ',')}</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={processarCheckout}
-                    className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2 text-sm"
-                  >
-                    <span>Enviar Encomenda no WhatsApp</span>
-                    <span>📲</span>
-                  </button>
                 </div>
+
+                {/* Resumo de Valores */}
+                <div className="mt-4 pt-3 border-t border-gray-100 space-y-1 text-xs">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Subtotal:</span>
+                    <span>R$ {calcularSubtotal().toFixed(2).replace('.', ',')}</span>
+                  </div>
+                  {formaEntrega === 'entrega' && (
+                    <div className="flex justify-between text-gray-600">
+                      <span>Taxa de Entrega:</span>
+                      <span>R$ {VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-base text-pink-700 pt-2 border-t border-gray-100">
+                    <span>Total:</span>
+                    <span>R$ {calcularTotal().toFixed(2).replace('.', ',')}</span>
+                  </div>
+                </div>
+
+                {/* Botão de Enviar */}
+                <button
+                  onClick={processarCheckout}
+                  className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs md:text-sm shadow-md transition flex items-center justify-center gap-2"
+                >
+                  <span>💬</span> Enviar Encomenda pelo WhatsApp
+                </button>
               </div>
             )}
           </div>
         </main>
       </div>
 
-      {/* MODAL DO PIX */}
+      {/* Modal Pix */}
       {mostrarModalPix && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-pink-100 text-center relative">
-            <h3 className="text-xl font-bold text-gray-800 mb-1">Pagamento via PIX</h3>
-            <p className="text-xs text-gray-500 mb-4">
-              Realize a transferência para confirmar o seu agendamento.
-            </p>
-
-            <div className="bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold p-2.5 rounded-xl mb-4 flex items-center justify-center gap-2">
-              <span>⏱️ Tempo para pagamento:</span>
-              <span className="font-mono text-sm font-bold text-amber-900">{formatarTempo(tempoRestante)}</span>
-            </div>
-
-            <div className="bg-pink-50 p-3 rounded-xl border border-pink-100 mb-4 text-left space-y-1 text-xs">
-              <p className="text-gray-600"><strong>Chave PIX (Aleatória):</strong></p>
-              <p className="font-mono bg-white p-2 rounded border text-[11px] break-all select-all text-gray-800">
-                {CHAVE_PIX}
-              </p>
-              <button
-                onClick={copiarChavePix}
-                className="w-full mt-2 bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1"
-              >
-                {chaveCopiada ? "✓ Chave Copiada!" : "📋 Copiar Chave PIX"}
-              </button>
-            </div>
-
-            <div className="text-left text-xs text-gray-600 mb-5 space-y-1">
-              <p><strong>Valor Total:</strong> R$ {calcularTotal().toFixed(2).replace('.', ',')}</p>
-              <p><strong>Beneficiário:</strong> Caseirinhos da Beth</p>
-            </div>
-
-            <div className="space-y-2">
-              <button
-                onClick={enviarPedidoWhatsApp}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow flex items-center justify-center gap-2"
-              >
-                <span>Já fiz o Pix / Enviar Comprovante</span>
-                <span>📲</span>
-              </button>
-
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-pink-100 text-center space-y-4">
+            <div className="flex justify-between items-center border-b pb-2">
+              <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                <span>⚡</span> Pagamento via PIX
+              </h3>
               <button
                 onClick={() => setMostrarModalPix(false)}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-2 rounded-xl text-xs transition"
+                className="text-gray-400 hover:text-gray-600 font-bold"
               >
-                Cancelar
+                ✕
               </button>
             </div>
+
+            <p className="text-xs text-gray-600">
+              Para confirmar a sua encomenda, realize o pagamento no valor total de:
+            </p>
+
+            <div className="text-2xl font-black text-pink-600 bg-pink-50 py-2 rounded-xl border border-pink-100">
+              R$ {calcularTotal().toFixed(2).replace('.', ',')}
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-2.5 rounded-xl font-semibold">
+              ⏳ Tempo para pagamento: <span className="font-bold">{formatarTempo(tempoRestante)}</span>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <label className="block text-[11px] font-bold text-gray-500 uppercase">Chave PIX (Copia e Cola):</label>
+              <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200">
+                <input
+                  type="text"
+                  readOnly
+                  value={CHAVE_PIX}
+                  className="text-xs font-mono text-gray-700 bg-transparent flex-1 focus:outline-none"
+                />
+                <button
+                  onClick={copiarChavePix}
+                  className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                >
+                  {chaveCopiada ? "Copiado! ✓" : "Copiar"}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-gray-500 italic">
+              Após realizar o pagamento, clique no botão abaixo para nos enviar os dados e o comprovante pelo WhatsApp.
+            </p>
+
+            <button
+              onClick={enviarPedidoWhatsApp}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition shadow flex items-center justify-center gap-2"
+            >
+              <span>💬</span> Já fiz o PIX, enviar pelo WhatsApp
+            </button>
           </div>
         </div>
       )}
 
-      {/* FOOTER */}
-      <footer className="mt-12 text-center text-xs text-gray-500 py-6 border-t border-pink-100 bg-white/60">
-        <p>© {new Date().getFullYear()} Caseirinhos da Beth — Todos os direitos reservados.</p>
-        <p className="mt-1">Feito com carinho para adoçar o seu dia 🍰</p>
+      {/* Footer */}
+      <footer className="mt-12 py-6 text-center text-xs text-pink-900/60 border-t border-pink-100 bg-amber-50/30">
+        <p>Caseirinhos da Beth © {new Date().getFullYear()} - Todos os direitos reservados</p>
       </footer>
     </div>
   );
