@@ -407,7 +407,16 @@ export default function App() {
     setMostrarModalPix(false);
   };
 
-  const categorias = ["Todas", "Mais Vendidos", "Bolos Tradicionais", "Bolos Especiais", "Bolos com Cobertura"];
+  
+const categorias = [
+  "Todas",
+  "Mais Vendidos",
+  "Bolos Tradicionais",
+  "Bolos Especiais",
+  "Bolos com Cobertura",
+  "Mini Bolo Vulcão"
+];
+
   const isAdmin = user && user.email === "celotube14@gmail.com";
 
   // TELA DE LOADING ANIMAÇÃO
