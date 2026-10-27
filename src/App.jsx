@@ -447,8 +447,7 @@ export default function App() {
     "Mais Vendidos",
     "Bolos Tradicionais",
     "Bolos Especiais",
-    "Bolos com Cobertura",
-    "Mini Bolo Vulcão"
+    "Mini Bolo Vulcão" ,
   ];
 
   const isAdmin = user && user.email === "celotube14@gmail.com";
