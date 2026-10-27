@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db, auth } from './firebase';
 import { 
@@ -20,6 +20,9 @@ export default function App() {
   const [carrinho, setCarrinho] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingInicial, setLoadingInicial] = useState(true);
+
+  // Referência para rolar a página até o cardápio
+  const cardapioRef = useRef(null);
 
   // Autenticação Admin & Modal Login
   const [user, setUser] = useState(null);
@@ -132,7 +135,7 @@ export default function App() {
             const diffTime = new Date() - new Date(novidadeDataStr);
             const diffDays = diffTime / (1000 * 60 * 60 * 24);
             if (diffDays > 15) {
-              isNovidade = false; // Expira após 15 dias automaticamente
+              isNovidade = false;
             }
           }
 
@@ -212,7 +215,6 @@ export default function App() {
       return;
     }
 
-    // Se marcou novidade agora e antes não era (ou é novo), define a data de hoje
     let finalNovidadeData = novidadeDataForm;
     if (novidadeForm && !novidadeDataForm) {
       finalNovidadeData = new Date().toISOString();
@@ -351,7 +353,6 @@ export default function App() {
     return atendeCategoria && atendeBusca;
   });
 
-  // Filtrar apenas novidades válidas dentro dos 15 dias
   const bolosNovidades = bolos.filter((b) => b.ativo && b.novidade);
 
   const validarFormulario = () => {
@@ -740,7 +741,7 @@ export default function App() {
             {/* COLUNA ESQUERDA: CARDÁPIO */}
             <div className={carrinho.length > 0 ? "lg:col-span-2" : "lg:col-span-3"}>
               
-              {/* BANNER DE AVISO DE NOVIDADES AUTOMÁTICO */}
+              {/* BANNER DE AVISO DE NOVIDADES AUTOMÁTICO COM ROLAGEM SUAVE */}
               {bolosNovidades.length > 0 && (
                 <div className="bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white rounded-2xl p-4 mb-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
@@ -753,7 +754,12 @@ export default function App() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setCategoriaAtiva('Mini Bolo Vulcão')}
+                    onClick={() => {
+                      setCategoriaAtiva('Mini Bolo Vulcão');
+                      if (cardapioRef.current) {
+                        cardapioRef.current.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
                     className="bg-white text-pink-700 hover:bg-pink-50 font-bold text-xs px-4 py-2.5 rounded-xl whitespace-nowrap shadow-sm transition self-end sm:self-center"
                   >
                     Ver Delícias 🌋
@@ -829,7 +835,8 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between mb-4">
+              {/* Referência de Rolagem Posicionada Aqui */}
+              <div ref={cardapioRef} className="flex items-center justify-between mb-4 pt-2">
                 <h2 className="text-2xl font-bold text-gray-800">
                   {categoriaAtiva === 'Todas' ? 'Nosso Cardápio' : categoriaAtiva}
                 </h2>
