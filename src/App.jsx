@@ -35,7 +35,8 @@ export default function App() {
   const [categoriaForm, setCategoriaForm] = useState('Bolos Tradicionais');
   const [descricaoForm, setDescricaoForm] = useState('');
   const [destaqueForm, setDestaqueForm] = useState(false);
-  const [novidadeForm, setNovidadeForm] = useState(false); // Novo estado para Novidade
+  const [novidadeForm, setNovidadeForm] = useState(false);
+  const [novidadeDataForm, setNovidadeDataForm] = useState(null);
 
   // Filtros, Busca e Layout
   const [categoriaAtiva, setCategoriaAtiva] = useState('Todas');
@@ -123,6 +124,18 @@ export default function App() {
         const listaBolos = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
+          let isNovidade = data.Novidade || data.novidade || false;
+          const novidadeDataStr = data.novidadeData || data.NovidadeData;
+
+          // Regra de expiração automática de 15 dias para novidades
+          if (isNovidade && novidadeDataStr) {
+            const diffTime = new Date() - new Date(novidadeDataStr);
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            if (diffDays > 15) {
+              isNovidade = false; // Expira após 15 dias automaticamente
+            }
+          }
+
           listaBolos.push({
             id: doc.id,
             nome: data.Nome || data.nome || "Bolo sem nome",
@@ -130,7 +143,8 @@ export default function App() {
             categoria: data.Categoria || data.categoria || "Geral",
             descricao: data.Descrição || data.descricao || data.Descricao || "",
             destaque: data.Destaque || data.destaque || false,
-            novidade: data.Novidade || data.novidade || false, // Leitura do Firestore
+            novidade: isNovidade,
+            novidadeData: novidadeDataStr,
             ativo: data.Ativo !== undefined ? data.Ativo : (data.ativo !== undefined ? data.ativo : true),
           });
         });
@@ -198,6 +212,14 @@ export default function App() {
       return;
     }
 
+    // Se marcou novidade agora e antes não era (ou é novo), define a data de hoje
+    let finalNovidadeData = novidadeDataForm;
+    if (novidadeForm && !novidadeDataForm) {
+      finalNovidadeData = new Date().toISOString();
+    } else if (!novidadeForm) {
+      finalNovidadeData = null;
+    }
+
     const dadosBolo = {
       nome: nomeForm,
       Preço: parseFloat(precoForm),
@@ -207,7 +229,8 @@ export default function App() {
       Destaque: destaqueForm,
       destaque: destaqueForm,
       Novidade: novidadeForm,
-      novidade: novidadeForm, // Salvando no Firestore
+      novidade: novidadeForm,
+      novidadeData: finalNovidadeData,
       Ativo: true,
       ativo: true
     };
@@ -235,7 +258,8 @@ export default function App() {
     setCategoriaForm(bolo.categoria || bolo.Categoria || "Bolos Tradicionais");
     setDescricaoForm(bolo.descricao || bolo.Descrição || "");
     setDestaqueForm(bolo.destaque !== undefined ? bolo.destaque : (bolo.Destaque || false));
-    setNovidadeForm(bolo.novidade !== undefined ? bolo.novidade : (bolo.Novidade || false)); // Carrega status novidade
+    setNovidadeForm(bolo.novidade !== undefined ? bolo.novidade : (bolo.Novidade || false));
+    setNovidadeDataForm(bolo.novidadeData || null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -258,6 +282,7 @@ export default function App() {
     setDescricaoForm('');
     setDestaqueForm(false);
     setNovidadeForm(false);
+    setNovidadeDataForm(null);
   };
 
   const exibirToast = (mensagem) => {
@@ -325,6 +350,9 @@ export default function App() {
     const atendeBusca = b.nome.toLowerCase().includes(busca.toLowerCase()) || b.descricao.toLowerCase().includes(busca.toLowerCase());
     return atendeCategoria && atendeBusca;
   });
+
+  // Filtrar apenas novidades válidas dentro dos 15 dias
+  const bolosNovidades = bolos.filter((b) => b.ativo && b.novidade);
 
   const validarFormulario = () => {
     if (!nomeCliente.trim()) {
@@ -641,7 +669,7 @@ export default function App() {
                 <select
                   value={categoriaForm}
                   onChange={(e) => setCategoriaForm(e.target.value)}
-                  className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white md:col-span-2"
+                  className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white md:col-span-2 font-medium"
                 >
                   {categorias.filter(c => c !== "Todas" && c !== "Mais Vendidos").map(c => (
                     <option key={c} value={c}>{c}</option>
@@ -679,7 +707,7 @@ export default function App() {
                       className="w-4 h-4 text-pink-600 rounded focus:ring-pink-500"
                     />
                     <label htmlFor="chkNovidade" className="text-sm font-semibold text-pink-700 cursor-pointer">
-                      Marcar como Novidade ✨
+                      Marcar como Novidade ✨ (Validade automática de 15 dias)
                     </label>
                   </div>
                 </div>
@@ -712,21 +740,51 @@ export default function App() {
             {/* COLUNA ESQUERDA: CARDÁPIO */}
             <div className={carrinho.length > 0 ? "lg:col-span-2" : "lg:col-span-3"}>
               
-              {/* Filtros de Categorias */}
-              <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
-                {categorias.map((cat) => (
+              {/* BANNER DE AVISO DE NOVIDADES AUTOMÁTICO */}
+              {bolosNovidades.length > 0 && (
+                <div className="bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white rounded-2xl p-4 mb-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl animate-bounce">✨</span>
+                    <div>
+                      <h4 className="font-bold text-sm sm:text-base">Novidades Fresquinhas no Cardápio!</h4>
+                      <p className="text-xs text-pink-100">
+                        {bolosNovidades.map(b => b.nome).join(' • ')} — Garanta já a sua encomenda!
+                      </p>
+                    </div>
+                  </div>
                   <button
-                    key={cat}
-                    onClick={() => setCategoriaAtiva(cat)}
-                    className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition shadow-sm ${
-                      categoriaAtiva.toLowerCase() === cat.toLowerCase()
-                        ? 'bg-pink-600 text-white'
-                        : 'bg-white text-pink-700 border border-pink-200 hover:bg-pink-100'
-                    }`}
+                    onClick={() => setCategoriaAtiva('Mini Bolo Vulcão')}
+                    className="bg-white text-pink-700 hover:bg-pink-50 font-bold text-xs px-4 py-2.5 rounded-xl whitespace-nowrap shadow-sm transition self-end sm:self-center"
                   >
-                    {cat === 'Mais Vendidos' ? `⭐ ${cat}` : cat}
+                    Ver Delícias 🌋
                   </button>
-                ))}
+                </div>
+              )}
+
+              {/* Filtros de Categorias com Destaque para Mini Bolo Vulcão */}
+              <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
+                {categorias.map((cat) => {
+                  const isMiniVulcão = cat === 'Mini Bolo Vulcão';
+                  const isAtiva = categoriaAtiva.toLowerCase() === cat.toLowerCase();
+
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setCategoriaAtiva(cat)}
+                      className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition shadow-sm flex items-center gap-1.5 ${
+                        isMiniVulcão
+                          ? (isAtiva 
+                              ? 'bg-gradient-to-r from-amber-500 to-rose-600 text-white ring-2 ring-amber-300 shadow-md scale-105' 
+                              : 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 animate-pulse')
+                          : (isAtiva
+                              ? 'bg-pink-600 text-white shadow-md'
+                              : 'bg-white text-pink-700 border border-pink-200 hover:bg-pink-100')
+                      }`}
+                    >
+                      {isMiniVulcão ? '🌋' : cat === 'Mais Vendidos' ? '⭐' : ''} {cat}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Barra de Busca + Modo de Exibição */}
@@ -805,7 +863,7 @@ export default function App() {
                             key={bolo.id}
                             className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition relative overflow-hidden"
                           >
-                            {/* Selo de Novidade */}
+                            {/* Selo de Novidade (Ativo por 15 dias) */}
                             {bolo.novidade && (
                               <span className="absolute top-2 left-2 bg-pink-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-full shadow flex items-center gap-1 z-10 animate-pulse">
                                 ✨ Novidade
@@ -866,7 +924,7 @@ export default function App() {
                             key={bolo.id}
                             className="bg-white rounded-xl shadow p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border border-pink-100 hover:shadow-md transition gap-4 relative overflow-hidden"
                           >
-                            {/* Selo de Novidade */}
+                            {/* Selo de Novidade (Ativo por 15 dias) */}
                             {bolo.novidade && (
                               <span className="absolute top-2 left-2 bg-pink-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow flex items-center gap-1 z-10 animate-pulse">
                                 ✨ Novidade
