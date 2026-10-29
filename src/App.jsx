@@ -434,33 +434,32 @@ export default function App() {
     setTimeout(() => setChaveCopiada(false), 3000);
   };
 
-  const enviarPedidoWhatsApp = async () => {
+  const enviarPedidoWhatsApp = () => {
     const totalPedido = calcularTotal();
     
-    try {
-      await addDoc(collection(db, "orders"), {
-        cliente: nomeCliente,
-        telefone: telefoneCliente,
-        dataEncomenda: dataDesejada,
-        horarioEncomenda: horarioDesejado,
-        formaEntrega: formaEntrega,
-        cep: cepCliente || '',
-        endereco: enderecoCliente || '',
-        numero: numeroCliente || '',
-        complemento: complementoCliente || '',
-        itens: carrinho,
-        subtotal: calcularSubtotal(),
-        taxaEntrega: formaEntrega === 'entrega' ? VALOR_TAXA_ENTREGA : 0,
-        total: totalPedido,
-        formaPagamento: formaPagamento,
-        trocoPara: precisaTroco || '',
-        observacoes: observacoes || '',
-        status: 'Pendente',
-        dataCriacao: new Date().toISOString()
-      });
-    } catch (e) {
-      console.error("Erro ao gravar pedido:", e);
-    }
+    // Grava no Firestore em segundo plano sem bloquear a abertura do WhatsApp
+    addDoc(collection(db, "orders"), {
+      cliente: nomeCliente,
+      telefone: telefoneCliente,
+      dataEncomenda: dataDesejada,
+      horarioEncomenda: horarioDesejado,
+      formaEntrega: formaEntrega,
+      cep: cepCliente || '',
+      endereco: enderecoCliente || '',
+      numero: numeroCliente || '',
+      complemento: complementoCliente || '',
+      itens: carrinho,
+      subtotal: calcularSubtotal(),
+      taxaEntrega: formaEntrega === 'entrega' ? VALOR_TAXA_ENTREGA : 0,
+      total: totalPedido,
+      formaPagamento: formaPagamento,
+      trocoPara: precisaTroco || '',
+      observacoes: observacoes || '',
+      status: 'Pendente',
+      dataCriacao: new Date().toISOString()
+    }).catch((e) => {
+      console.error("Erro ao gravar pedido no Firestore:", e);
+    });
 
     let mensagem = `*Novo Pedido (Sob Encomenda) - Caseirinhos da Beth*\n\n`;
     mensagem += `*Cliente:* ${nomeCliente}\n`;
@@ -506,7 +505,7 @@ export default function App() {
     }
 
     const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(mensagem)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(url, '_blank');
     setMostrarModalPix(false);
   };
 
@@ -896,7 +895,7 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* FORMULÁRIO DE DADOS DO CLIENTE RESTAURADO */}
+                {/* FORMULÁRIO DE DADOS DO CLIENTE */}
                 <div className="mt-4 pt-4 border-t space-y-3">
                   <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide">Dados para Encomenda</h4>
 
@@ -1035,6 +1034,48 @@ export default function App() {
           </div>
         </main>
       </div>
+
+      {/* MODAL DO PIX ANTECIPADO */}
+      {mostrarModalPix && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border-2 border-pink-300 text-center relative">
+            <h3 className="text-lg font-bold text-pink-700 mb-1">Pagamento via Pix</h3>
+            <p className="text-xs text-gray-600 mb-4">Copie a chave Pix abaixo e realize o pagamento</p>
+
+            <div className="bg-pink-50 p-4 rounded-2xl border border-pink-200 mb-4">
+              <span className="text-[11px] font-mono break-all text-gray-700 block select-all bg-white p-2.5 rounded-xl border border-pink-100">
+                {CHAVE_PIX}
+              </span>
+              <button
+                onClick={copiarChavePix}
+                className="mt-3 w-full bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold py-2 rounded-xl transition shadow"
+              >
+                {chaveCopiada ? "✨ Chave Copiada com Sucesso!" : "Copiar Chave Pix"}
+              </button>
+            </div>
+
+            <div className="mb-4 bg-amber-50 p-3 rounded-xl border border-amber-200">
+              <span className="text-xs text-amber-900 font-bold block mb-0.5">Tempo limite para pagamento:</span>
+              <span className="text-xl font-extrabold text-amber-700 font-mono">{formatarTempo(tempoRestante)}</span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={enviarPedidoWhatsApp}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-xl transition shadow"
+              >
+                Já paguei, Enviar Pedido no WhatsApp ✅
+              </button>
+              <button
+                onClick={() => setMostrarModalPix(false)}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-2 rounded-xl transition"
+              >
+                Cancelar / Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className="bg-amber-100/60 text-center py-6 border-t mt-12 text-xs text-pink-900/80">
         <p className="font-semibold">Caseirinhos da Beth &copy; {new Date().getFullYear()}</p>
