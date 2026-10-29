@@ -18,6 +18,7 @@ import {
 export default function App() {
   const [bolos, setBolos] = useState([]);
   const [carrinho, setCarrinho] = useState([]);
+  const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingInicial, setLoadingInicial] = useState(true);
 
@@ -30,6 +31,9 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erroLogin, setErroLogin] = useState('');
+
+  // Aba ativa do Admin: 'pedidos', 'clientes' ou 'cardapio'
+  const [abaAdmin, setAbaAdmin] = useState('pedidos');
 
   // Estados do Painel CRUD Admin
   const [boloEditando, setBoloEditando] = useState(null);
@@ -54,6 +58,7 @@ export default function App() {
 
   // Checkout & Agendamento
   const [nomeCliente, setNomeCliente] = useState('');
+  const [telefoneCliente, setTelefoneCliente] = useState(''); // Novo estado para o WhatsApp do cliente
   const [cepCliente, setCepCliente] = useState('');
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [enderecoCliente, setEnderecoCliente] = useState('');
@@ -76,7 +81,7 @@ export default function App() {
   const NUMERO_WHATSAPP = "5511996808580"; 
   const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
 
-  // Loading de abertura (animação de entrada)
+  // Loading de abertura
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoadingInicial(false);
@@ -117,6 +122,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // Escutar produtos (Bolos)
   useEffect(() => {
     setLoading(true);
     const bolosRef = collection(db, "bolos");
@@ -130,7 +136,6 @@ export default function App() {
           let isNovidade = data.Novidade || data.novidade || false;
           const novidadeDataStr = data.novidadeData || data.NovidadeData;
 
-          // Regra de expiração automática de 15 dias para novidades
           if (isNovidade && novidadeDataStr) {
             const diffTime = new Date() - new Date(novidadeDataStr);
             const diffDays = diffTime / (1000 * 60 * 60 * 24);
@@ -162,6 +167,28 @@ export default function App() {
 
     return () => unsubscribe();
   }, []);
+
+  // Escutar Pedidos (Orders) em Tempo Real para o Admin
+  useEffect(() => {
+    if (!user) return;
+
+    const ordersRef = collection(db, "orders");
+    const unsubscribeOrders = onSnapshot(ordersRef, (snapshot) => {
+      const listaPedidos = [];
+      snapshot.forEach((docSnap) => {
+        listaPedidos.push({
+          id: docSnap.id,
+          ...docSnap.data()
+        });
+      });
+      listaPedidos.sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
+      setPedidos(listaPedidos);
+    }, (err) => {
+      console.error("Erro ao carregar pedidos:", err);
+    });
+
+    return () => unsubscribeOrders();
+  }, [user]);
 
   // Busca do CEP via API ViaCEP
   const buscarCep = async (cep) => {
@@ -276,6 +303,16 @@ export default function App() {
     }
   };
 
+  const handleAtualizarStatusPedido = async (pedidoId, novoStatus) => {
+    try {
+      const pRef = doc(db, "orders", pedidoId);
+      await updateDoc(pRef, { status: novoStatus });
+      exibirToast(`Status alterado para "${novoStatus}"`);
+    } catch (err) {
+      console.error("Erro ao atualizar pedido:", err);
+    }
+  };
+
   const resetFormAdmin = () => {
     setBoloEditando(null);
     setNomeForm('');
@@ -360,6 +397,10 @@ export default function App() {
       alert("Por favor, digite seu nome antes de enviar o pedido.");
       return false;
     }
+    if (!telefoneCliente.trim()) {
+      alert("Por favor, digite seu WhatsApp/Telefone para contato.");
+      return false;
+    }
     if (formaEntrega === 'entrega') {
       if (!enderecoCliente.trim()) {
         alert("Por favor, preencha o CEP e o endereço de entrega.");
@@ -394,9 +435,38 @@ export default function App() {
     setTimeout(() => setChaveCopiada(false), 3000);
   };
 
-  const enviarPedidoWhatsApp = () => {
+  // Salvar pedido no Firestore (com telefone) e Abrir WhatsApp
+  const enviarPedidoWhatsApp = async () => {
+    const totalPedido = calcularTotal();
+    
+    try {
+      await addDoc(collection(db, "orders"), {
+        cliente: nomeCliente,
+        telefone: telefoneCliente,
+        dataEncomenda: dataDesejada,
+        horarioEncomenda: horarioDesejado,
+        formaEntrega: formaEntrega,
+        cep: cepCliente || '',
+        endereco: enderecoCliente || '',
+        numero: numeroCliente || '',
+        complemento: complementoCliente || '',
+        itens: carrinho,
+        subtotal: calcularSubtotal(),
+        taxaEntrega: formaEntrega === 'entrega' ? VALOR_TAXA_ENTREGA : 0,
+        total: totalPedido,
+        formaPagamento: formaPagamento,
+        trocoPara: precisaTroco || '',
+        observacoes: observacoes || '',
+        status: 'Pendente',
+        dataCriacao: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error("Erro ao gravar pedido:", e);
+    }
+
     let mensagem = `*Novo Pedido (Sob Encomenda) - Caseirinhos da Beth*\n\n`;
     mensagem += `*Cliente:* ${nomeCliente}\n`;
+    mensagem += `*WhatsApp:* ${telefoneCliente}\n`;
     mensagem += `*Data para Encomenda:* ${dataDesejada.split('-').reverse().join('/')} às ${horarioDesejado}\n`;
     mensagem += `*Forma:* ${formaEntrega === 'entrega' ? 'Entrega (Redondezas)' : 'Retirada no local'}\n`;
     
@@ -422,7 +492,7 @@ export default function App() {
       mensagem += `*Taxa de Entrega:* R$ ${VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}\n`;
     }
 
-    mensagem += `*Total Geral:* R$ ${calcularTotal().toFixed(2).replace('.', ',')}\n`;
+    mensagem += `*Total Geral:* R$ ${totalPedido.toFixed(2).replace('.', ',')}\n`;
     mensagem += `*Pagamento:* ${formaPagamento}\n`;
     
     if (formaPagamento === 'Pix') {
@@ -447,12 +517,35 @@ export default function App() {
     "Mais Vendidos",
     "Bolos Tradicionais",
     "Bolos Especiais",
-    "Mini Bolo Vulcão" ,
+    "Bolos com Cobertura",
+    "Mini Bolo Vulcão"
   ];
 
   const isAdmin = user && user.email === "celotube14@gmail.com";
 
-  // TELA DE LOADING ANIMAÇÃO
+  // CÁLCULOS FINANCEIROS
+  const pedidosConcluidos = pedidos.filter(p => p.status === 'Concluído');
+  const faturamentoTotal = pedidosConcluidos.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
+  const ticketMedio = pedidosConcluidos.length > 0 ? (faturamentoTotal / pedidosConcluidos.length) : 0;
+
+  // GERAR LISTA DE CLIENTES ÚNICOS A PARTIR DOS PEDIDOS
+  const clientesMap = {};
+  pedidos.forEach(p => {
+    const telKey = p.telefone || p.cliente;
+    if (!clientesMap[telKey]) {
+      clientesMap[telKey] = {
+        nome: p.cliente,
+        telefone: p.telefone || 'Não informado',
+        totalPedidos: 0,
+        valorGasto: 0,
+        ultimoPedido: p.dataEncomenda
+      };
+    }
+    clientesMap[telKey].totalPedidos += 1;
+    clientesMap[telKey].valorGasto += parseFloat(p.total || 0);
+  });
+  const listaClientes = Object.values(clientesMap);
+
   if (loadingInicial) {
     return (
       <div className="fixed inset-0 bg-pink-50 flex flex-col items-center justify-center z-50 p-4">
@@ -460,35 +553,23 @@ export default function App() {
           <div className="w-24 h-24 border-4 border-pink-200 border-t-pink-600 rounded-full animate-spin"></div>
           <span className="absolute text-4xl animate-bounce">🍰</span>
         </div>
-
-        <h1 
-          className="text-3xl font-normal tracking-wide text-center"
-          style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}
-        >
+        <h1 className="text-3xl font-normal tracking-wide text-center" style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}>
           Caseirinhos da Beth
         </h1>
-
-        <p className="text-pink-800 text-xs font-semibold tracking-wider mt-2 animate-pulse">
-          Preparando as delícias para você...
-        </p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-pink-50 font-sans pb-24 md:pb-12 relative flex flex-col justify-between">
-      
       <div>
-        {/* Toast Notification */}
         {toastMsg && (
           <div className="fixed top-5 right-5 z-50 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-xl border border-gray-700 animate-bounce">
             ✨ {toastMsg}
           </div>
         )}
 
-        {/* Header Estilizado */}
         <header className="bg-amber-50/80 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
-          
           {isAdmin ? (
             <div className="absolute top-3 right-4 z-10 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-full border border-pink-200 shadow-sm">
               <span className="text-xs font-bold text-pink-700">Admin Ativo</span>
@@ -504,736 +585,324 @@ export default function App() {
           )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
-            <div className="flex items-center gap-2 mb-1 text-rose-700 opacity-90">
-              <span className="h-[1.5px] w-8 bg-rose-600 rounded-full"></span>
-              <svg className="w-5 h-5 fill-rose-600" viewBox="0 0 24 24">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-              </svg>
-              <span className="h-[1.5px] w-8 bg-rose-600 rounded-full"></span>
-            </div>
-
-            <h1 
-              className="text-5xl md:text-6xl font-normal leading-tight tracking-wide drop-shadow-sm select-none"
-              style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}
-            >
+            <h1 className="text-5xl md:text-6xl font-normal leading-tight tracking-wide drop-shadow-sm select-none" style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}>
               Caseirinhos
             </h1>
-
             <div className="flex items-center justify-center gap-2 -mt-3 relative">
-              <span 
-                className="text-2xl md:text-3xl"
-                style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}
-              >
-                da
-              </span>
-              <span 
-                className="text-5xl md:text-6xl text-rose-700"
-                style={{ fontFamily: "'Pacifico', cursive" }}
-              >
-                Beth
-              </span>
-
-              <svg className="w-8 h-8 text-rose-600 inline-block ml-1 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
+              <span className="text-2xl md:text-3xl" style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}>da</span>
+              <span className="text-5xl md:text-6xl text-rose-700" style={{ fontFamily: "'Pacifico', cursive" }}>Beth</span>
             </div>
-
             <p className="mt-3 text-pink-900/80 text-sm md:text-base font-semibold tracking-wider">
               Bolos Caseiros e Especiais | Feitos com amor
             </p>
-
-            <div className="mt-3 bg-amber-100 text-amber-900 border border-amber-300 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-2">
-              <span>📅</span>
-              <span>Trabalhamos exclusivamente <strong>Sob Encomenda</strong></span>
-            </div>
-
-            <span className={`inline-flex items-center gap-2 mt-3 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
-              lojaAberta 
-                ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
-                : 'bg-rose-100 text-rose-800 border-rose-300'
-            }`}>
+            <span className={`inline-flex items-center gap-2 mt-3 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${lojaAberta ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'}`}>
               <span className={`w-2 h-2 rounded-full ${lojaAberta ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-              {lojaAberta ? 'Aberto Agora (08:00 às 21:00)' : 'Fechado no momento (Abre às 08:00)'}
+              {lojaAberta ? 'Aberto Agora (08:00 às 21:00)' : 'Fechado no momento'}
             </span>
-
-            {/* BOTÃO EM DESTAQUE DO INSTAGRAM */}
-            <a 
-              href="https://www.instagram.com/beth.caseirinhos/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="mt-4 bg-gradient-to-r from-purple-600 via-pink-500 to-amber-500 text-white text-xs md:text-sm font-bold px-5 py-2 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
-            >
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-              </svg>
-              <span>Siga no Instagram @beth.caseirinhos</span>
-            </a>
-
           </div>
         </header>
 
-        {/* Modal Login Admin */}
         {mostrarModalLogin && !isAdmin && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl border border-pink-100">
-              <div className="flex justify-between items-center pb-2 border-b mb-4">
-                <h3 className="text-lg font-bold text-gray-800">Acesso Administrativo</h3>
-                <button 
-                  onClick={() => setMostrarModalLogin(false)}
-                  className="text-gray-400 hover:text-gray-600 font-bold"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {erroLogin && (
-                <p className="text-xs bg-red-50 text-red-600 p-2.5 rounded-lg mb-3 border border-red-100 font-semibold break-words">
-                  {erroLogin}
-                </p>
-              )}
-
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Acesso Administrativo</h3>
               <form onSubmit={handleLogin} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">E-mail</label>
-                  <input
-                    type="email"
-                    placeholder="Seu e-mail de admin"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full text-sm px-3 py-2 border rounded-lg focus:outline-none focus:border-pink-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Senha</label>
-                  <input
-                    type="password"
-                    placeholder="Sua senha"
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    required
-                    className="w-full text-sm px-3 py-2 border rounded-lg focus:outline-none focus:border-pink-500"
-                  />
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 rounded-xl text-sm transition"
-                  >
-                    Entrar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMostrarModalLogin(false)}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-3 py-2 rounded-xl text-sm transition"
-                  >
-                    Cancelar
-                  </button>
-                </div>
+                <input
+                  type="email"
+                  placeholder="Seu e-mail de admin"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full text-sm px-3 py-2 border rounded-lg"
+                />
+                <input
+                  type="password"
+                  placeholder="Sua senha"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  required
+                  className="w-full text-sm px-3 py-2 border rounded-lg"
+                />
+                <button type="submit" className="w-full bg-pink-600 text-white font-bold py-2 rounded-xl text-sm">Entrar</button>
               </form>
             </div>
           </div>
         )}
 
         <main className="max-w-7xl mx-auto p-4 md:p-6">
-
-          {/* PAINEL ADMIN */}
           {isAdmin && (
-            <section className="bg-white rounded-xl shadow-md p-6 border-2 border-pink-300 mb-8">
-              <h2 className="text-xl font-bold text-pink-700 mb-4 flex items-center gap-2">
-                <span>🛠️</span> {boloEditando ? "Editar Produto do Cardápio" : "Cadastrar Novo Bolo"}
-              </h2>
-
-              <form onSubmit={handleSalvarBolo} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Nome do Bolo"
-                  value={nomeForm}
-                  onChange={(e) => setNomeForm(e.target.value)}
-                  required
-                  className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
-                />
-
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Preço (R$)"
-                  value={precoForm}
-                  onChange={(e) => setPrecoForm(e.target.value)}
-                  required
-                  className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
-                />
-
-                <select
-                  value={categoriaForm}
-                  onChange={(e) => setCategoriaForm(e.target.value)}
-                  className="text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 bg-white md:col-span-2 font-medium"
+            <section className="bg-white rounded-2xl shadow-lg p-6 border-2 border-pink-300 mb-8">
+              <div className="flex gap-2 sm:gap-3 mb-6 border-b pb-4 overflow-x-auto">
+                <button
+                  onClick={() => setAbaAdmin('pedidos')}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 ${abaAdmin === 'pedidos' ? 'bg-pink-600 text-white shadow-md' : 'bg-pink-50 text-pink-700 hover:bg-pink-100'}`}
                 >
-                  {categorias.filter(c => c !== "Todas" && c !== "Mais Vendidos").map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                  <span>📋</span> Pedidos & Financeiro ({pedidos.length})
+                </button>
+                <button
+                  onClick={() => setAbaAdmin('clientes')}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 ${abaAdmin === 'clientes' ? 'bg-pink-600 text-white shadow-md' : 'bg-pink-50 text-pink-700 hover:bg-pink-100'}`}
+                >
+                  <span>👥</span> Lista de Clientes ({listaClientes.length})
+                </button>
+                <button
+                  onClick={() => setAbaAdmin('cardapio')}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 ${abaAdmin === 'cardapio' ? 'bg-pink-600 text-white shadow-md' : 'bg-pink-50 text-pink-700 hover:bg-pink-100'}`}
+                >
+                  <span>🛠️</span> Gerenciar Cardápio
+                </button>
+              </div>
 
-                <textarea
-                  placeholder="Descrição dos ingredientes..."
-                  value={descricaoForm}
-                  onChange={(e) => setDescricaoForm(e.target.value)}
-                  rows={2}
-                  className="md:col-span-2 text-sm p-2.5 border border-pink-200 rounded-lg focus:outline-none focus:border-pink-500"
-                />
-
-                <div className="md:col-span-2 flex flex-col sm:flex-row gap-4 bg-pink-50 p-3 rounded-lg border border-pink-100">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="chkDestaque"
-                      checked={destaqueForm}
-                      onChange={(e) => setDestaqueForm(e.target.checked)}
-                      className="w-4 h-4 text-pink-600 rounded focus:ring-pink-500"
-                    />
-                    <label htmlFor="chkDestaque" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                      Marcar como Mais Vendido / Destaque ⭐
-                    </label>
+              {abaAdmin === 'pedidos' && (
+                <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                      <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Faturamento Recebido</span>
+                      <h3 className="text-2xl font-extrabold text-emerald-700 mt-1">R$ {faturamentoTotal.toFixed(2).replace('.', ',')}</h3>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                      <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Pedidos Finalizados</span>
+                      <h3 className="text-2xl font-extrabold text-amber-700 mt-1">{pedidosConcluidos.length} / {pedidos.length}</h3>
+                    </div>
+                    <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl">
+                      <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">Ticket Médio</span>
+                      <h3 className="text-2xl font-extrabold text-purple-700 mt-1">R$ {ticketMedio.toFixed(2).replace('.', ',')}</h3>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="chkNovidade"
-                      checked={novidadeForm}
-                      onChange={(e) => setNovidadeForm(e.target.checked)}
-                      className="w-4 h-4 text-pink-600 rounded focus:ring-pink-500"
-                    />
-                    <label htmlFor="chkNovidade" className="text-sm font-semibold text-pink-700 cursor-pointer">
-                      Marcar como Novidade ✨ (Validade automática de 15 dias)
-                    </label>
-                  </div>
-                </div>
-
-                <div className="md:col-span-2 flex gap-3">
-                  <button
-                    type="submit"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow"
-                  >
-                    {boloEditando ? "Atualizar Bolo" : "Cadastrar Bolo"}
-                  </button>
-                  
-                  {boloEditando && (
-                    <button
-                      type="button"
-                      onClick={resetFormAdmin}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2.5 rounded-xl text-sm transition"
-                    >
-                      Cancelar Edição
-                    </button>
+                  <h3 className="font-bold text-gray-800 text-lg mb-4">Gestão de Encomendas Recebidas</h3>
+                  {pedidos.length === 0 ? (
+                    <p className="text-gray-500 text-xs text-center py-6">Nenhum pedido registrado ainda.</p>
+                  ) : (
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                      {pedidos.map((ped) => (
+                        <div key={ped.id} className="border border-pink-100 bg-pink-50/30 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-bold text-gray-800 text-sm">{ped.cliente}</h4>
+                              <span className="text-xs text-pink-600 bg-pink-100 px-2 py-0.5 rounded font-mono">📱 {ped.telefone || 'Sem WhatsApp'}</span>
+                              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${ped.status === 'Concluído' ? 'bg-emerald-100 text-emerald-800' : ped.status === 'Em Produção' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                                {ped.status || 'Pendente'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600">📅 <strong>Data:</strong> {ped.dataEncomenda?.split('-').reverse().join('/')} às {ped.horarioEncomenda}</p>
+                            <p className="text-xs text-gray-600">🚚 <strong>Tipo:</strong> {ped.formaEntrega === 'entrega' ? `Entrega (${ped.endereco}, Nº ${ped.numero})` : 'Retirada no Local'}</p>
+                            <div className="mt-2 text-xs bg-white p-2 rounded-lg border border-pink-100">
+                              <strong>Itens:</strong> {ped.itens?.map(i => `${i.quantidade}x ${i.nome}`).join(' • ')}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0">
+                            <span className="text-lg font-black text-pink-700">R$ {parseFloat(ped.total || 0).toFixed(2).replace('.', ',')}</span>
+                            <div className="flex gap-1 flex-wrap">
+                              <button onClick={() => handleAtualizarStatusPedido(ped.id, 'Em Produção')} className="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">👨‍🍳 Produção</button>
+                              <button onClick={() => handleAtualizarStatusPedido(ped.id, 'Concluído')} className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">✅ Concluir</button>
+                              <button onClick={() => handleAtualizarStatusPedido(ped.id, 'Cancelado')} className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">❌ Cancelar</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-              </form>
+              )}
+
+              {/* ABA DE CONTATOS / CLIENTES */}
+              {abaAdmin === 'clientes' && (
+                <div>
+                  <h3 className="font-bold text-gray-800 text-lg mb-2">Lista de Contatos dos Clientes</h3>
+                  <p className="text-xs text-gray-500 mb-4">Aqui estão reunidos todos os clientes que já fizeram pedidos no site, com o resumo de compras e WhatsApp para contato.</p>
+                  
+                  {listaClientes.length === 0 ? (
+                    <p className="text-gray-500 text-xs text-center py-6">Nenhum cliente cadastrado ainda.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2">
+                      {listaClientes.map((cli, index) => (
+                        <div key={index} className="bg-pink-50/50 border border-pink-200 p-4 rounded-xl shadow-sm flex flex-col justify-between">
+                          <div>
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-bold text-gray-800 text-base">{cli.nome}</h4>
+                              <a 
+                                href={`https://api.whatsapp.com/send?phone=55${cli.telefone.replace(/\D/g, '')}&text=Olá%20${encodeURIComponent(cli.nome)}!%20Tudo%20bem?`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow transition"
+                              >
+                                <span>💬</span> Chamar no WhatsApp
+                              </a>
+                            </div>
+                            <p className="text-xs text-gray-600 mb-1">📱 <strong>WhatsApp:</strong> {cli.telefone}</p>
+                            <p className="text-xs text-gray-600 mb-1">🛍️ <strong>Total de Pedidos:</strong> {cli.totalPedidos} {cli.totalPedidos === 1 ? 'pedido' : 'pedidos'}</p>
+                            <p className="text-xs text-gray-600">💰 <strong>Valor Total Gasto:</strong> R$ {cli.valorGasto.toFixed(2).replace('.', ',')}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {abaAdmin === 'cardapio' && (
+                <form onSubmit={handleSalvarBolo} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input type="text" placeholder="Nome do Bolo" value={nomeForm} onChange={(e) => setNomeForm(e.target.value)} required className="text-sm p-2.5 border border-pink-200 rounded-lg" />
+                  <input type="number" step="0.01" placeholder="Preço (R$)" value={precoForm} onChange={(e) => setPrecoForm(e.target.value)} required className="text-sm p-2.5 border border-pink-200 rounded-lg" />
+                  <select value={categoriaForm} onChange={(e) => setCategoriaForm(e.target.value)} className="text-sm p-2.5 border border-pink-200 rounded-lg md:col-span-2">
+                    {categorias.filter(c => c !== "Todas" && c !== "Mais Vendidos").map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <textarea placeholder="Descrição..." value={descricaoForm} onChange={(e) => setDescricaoForm(e.target.value)} rows={2} className="md:col-span-2 text-sm p-2.5 border border-pink-200 rounded-lg" />
+                  <div className="md:col-span-2 flex gap-4 bg-pink-50 p-3 rounded-lg border">
+                    <label className="text-xs font-semibold cursor-pointer"><input type="checkbox" checked={destaqueForm} onChange={(e) => setDestaqueForm(e.target.checked)} /> Destaque ⭐</label>
+                    <label className="text-xs font-semibold text-pink-700 cursor-pointer"><input type="checkbox" checked={novidadeForm} onChange={(e) => setNovidadeForm(e.target.checked)} /> Novidade ✨ (15 dias)</label>
+                  </div>
+                  <button type="submit" className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm md:col-span-2">
+                    {boloEditando ? "Atualizar Bolo" : "Cadastrar Bolo"}
+                  </button>
+                </form>
+              )}
             </section>
           )}
 
-          {/* ESTRUTURA PRINCIPAL EM GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            
-            {/* COLUNA ESQUERDA: CARDÁPIO */}
             <div className={carrinho.length > 0 ? "lg:col-span-2" : "lg:col-span-3"}>
-              
-              {/* BANNER DE AVISO DE NOVIDADES AUTOMÁTICO COM ROLAGEM SUAVE */}
               {bolosNovidades.length > 0 && (
                 <div className="bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white rounded-2xl p-4 mb-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <span className="text-3xl animate-bounce">✨</span>
                     <div>
                       <h4 className="font-bold text-sm sm:text-base">Novidades Fresquinhas no Cardápio!</h4>
-                      <p className="text-xs text-pink-100">
-                        {bolosNovidades.map(b => b.nome).join(' • ')} — Garanta já a sua encomenda!
-                      </p>
+                      <p className="text-xs text-pink-100">{bolosNovidades.map(b => b.nome).join(' • ')} — Garanta já a sua encomenda!</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setCategoriaAtiva('Mini Bolo Vulcão');
-                      if (cardapioRef.current) {
-                        cardapioRef.current.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }}
-                    className="bg-white text-pink-700 hover:bg-pink-50 font-bold text-xs px-4 py-2.5 rounded-xl whitespace-nowrap shadow-sm transition self-end sm:self-center"
-                  >
+                  <button onClick={() => { setCategoriaAtiva('Mini Bolo Vulcão'); if (cardapioRef.current) { cardapioRef.current.scrollIntoView({ behavior: 'smooth' }); }}} className="bg-white text-pink-700 font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm self-end sm:self-center">
                     Ver Delícias 🌋
                   </button>
                 </div>
               )}
 
-              {/* Filtros de Categorias com Destaque para Mini Bolo Vulcão */}
               <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
                 {categorias.map((cat) => {
-                  const isMiniVulcão = cat === 'Mini Bolo Vulcão';
+                  const isMiniVulcao = cat === 'Mini Bolo Vulcão';
                   const isAtiva = categoriaAtiva.toLowerCase() === cat.toLowerCase();
-
                   return (
                     <button
                       key={cat}
                       onClick={() => setCategoriaAtiva(cat)}
-                      className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition shadow-sm flex items-center gap-1.5 ${
-                        isMiniVulcão
-                          ? (isAtiva 
-                              ? 'bg-gradient-to-r from-amber-500 to-rose-600 text-white ring-2 ring-amber-300 shadow-md scale-105' 
-                              : 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 animate-pulse')
-                          : (isAtiva
-                              ? 'bg-pink-600 text-white shadow-md'
-                              : 'bg-white text-pink-700 border border-pink-200 hover:bg-pink-100')
-                      }`}
+                      className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition shadow-sm flex items-center gap-1.5 ${isMiniVulcao ? (isAtiva ? 'bg-gradient-to-r from-amber-500 to-rose-600 text-white ring-2 ring-amber-300 shadow-md scale-105' : 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 animate-pulse') : (isAtiva ? 'bg-pink-600 text-white shadow-md' : 'bg-white text-pink-700 border border-pink-200 hover:bg-pink-100')}`}
                     >
-                      {isMiniVulcão ? '🌋' : cat === 'Mais Vendidos' ? '⭐' : ''} {cat}
+                      {isMiniVulcao ? '🌋' : cat === 'Mais Vendidos' ? '⭐' : ''} {cat}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Barra de Busca + Modo de Exibição */}
-              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <div className="flex gap-3 mb-6">
                 <input
                   type="text"
-                  placeholder="🔍 Buscar por sabor (ex: Nutella, Cenoura, Milho)..."
+                  placeholder="🔍 Buscar por sabor (ex: Nutella, Cenoura)..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-pink-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white shadow-sm"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-pink-200 text-sm bg-white shadow-sm"
                 />
-
-                <div className="bg-white p-1 rounded-xl border border-pink-200 flex items-center justify-center gap-1 self-end sm:self-auto shadow-sm">
-                  <button
-                    onClick={() => setModoVisualizacao('grade')}
-                    title="Visualização em Cards"
-                    className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
-                      modoVisualizacao === 'grade'
-                        ? 'bg-pink-500 text-white'
-                        : 'text-gray-500 hover:text-pink-600'
-                    }`}
-                  >
-                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                      <path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/>
-                    </svg>
-                    <span className="hidden sm:inline">Cards</span>
-                  </button>
-                  <button
-                    onClick={() => setModoVisualizacao('lista')}
-                    title="Visualização em Lista"
-                    className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
-                      modoVisualizacao === 'lista'
-                        ? 'bg-pink-500 text-white'
-                        : 'text-gray-500 hover:text-pink-600'
-                    }`}
-                  >
-                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                      <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
-                    </svg>
-                    <span className="hidden sm:inline">Lista</span>
-                  </button>
-                </div>
               </div>
 
-              {/* Referência de Rolagem Posicionada Aqui */}
               <div ref={cardapioRef} className="flex items-center justify-between mb-4 pt-2">
                 <h2 className="text-2xl font-bold text-gray-800">
                   {categoriaAtiva === 'Todas' ? 'Nosso Cardápio' : categoriaAtiva}
                 </h2>
-                <span className="text-xs text-pink-700 font-semibold bg-pink-100 px-3 py-1 rounded-full">
-                  Feitos sob encomenda 🍰
-                </span>
               </div>
 
-              {/* Lista do Cardápio com Animação */}
-              {loading ? (
-                <p className="text-gray-500">Carregando delícias...</p>
-              ) : (
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={`${categoriaAtiva}-${busca}-${modoVisualizacao}`}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  >
-                    {bolosFiltrados.length === 0 ? (
-                      <div className="bg-white rounded-xl p-8 text-center border border-pink-100 shadow-sm">
-                        <p className="text-gray-500 text-sm">
-                          Nenhum bolo encontrado para essa pesquisa ou categoria.
-                        </p>
-                      </div>
-                    ) : modoVisualizacao === 'grade' ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {bolosFiltrados.map((bolo) => (
-                          <div
-                            key={bolo.id}
-                            className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition relative overflow-hidden"
-                          >
-                            {/* Selo de Novidade (Ativo por 15 dias) */}
-                            {bolo.novidade && (
-                              <span className="absolute top-2 left-2 bg-pink-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-full shadow flex items-center gap-1 z-10 animate-pulse">
-                                ✨ Novidade
-                              </span>
-                            )}
-
-                            <div>
-                              <div className="flex justify-between items-start gap-2 mb-2">
-                                <h3 className="font-bold text-gray-800 text-lg">{bolo.nome}</h3>
-                                <span className="text-pink-700 font-extrabold text-base whitespace-nowrap">
-                                  R$ {bolo.preco.toFixed(2).replace('.', ',')}
-                                </span>
-                              </div>
-
-                              <span className="inline-block bg-pink-50 text-pink-800 text-[11px] font-semibold px-2.5 py-0.5 rounded-full mb-2">
-                                {bolo.categoria}
-                              </span>
-
-                              <p className="text-gray-600 text-xs leading-relaxed mb-4">
-                                {bolo.descricao || "Feito com ingredientes selecionados e muito carinho."}
-                              </p>
-                            </div>
-
-                            <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                              {isAdmin ? (
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleEditarBolo(bolo)}
-                                    className="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
-                                  >
-                                    Editar
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeletarBolo(bolo.id)}
-                                    className="bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
-                                  >
-                                    Excluir
-                                  </button>
-                                </div>
-                              ) : (
-                                <span className="text-[11px] text-gray-400 font-medium">Sob encomenda</span>
-                              )}
-
-                              <button
-                                onClick={() => adicionarAoCarrinho(bolo)}
-                                className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow flex items-center gap-1.5 ml-auto"
-                              >
-                                <span>🛒</span> Adicionar
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {bolosFiltrados.map((bolo) => (
-                          <div
-                            key={bolo.id}
-                            className="bg-white rounded-xl shadow p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border border-pink-100 hover:shadow-md transition gap-4 relative overflow-hidden"
-                          >
-                            {/* Selo de Novidade (Ativo por 15 dias) */}
-                            {bolo.novidade && (
-                              <span className="absolute top-2 left-2 bg-pink-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow flex items-center gap-1 z-10 animate-pulse">
-                                ✨ Novidade
-                              </span>
-                            )}
-
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-bold text-gray-800 text-base">{bolo.nome}</h3>
-                                <span className="text-[10px] bg-pink-50 text-pink-700 font-semibold px-2 py-0.5 rounded-full">
-                                  {bolo.categoria}
-                                </span>
-                              </div>
-                              <p className="text-gray-600 text-xs">{bolo.descricao}</p>
-                            </div>
-
-                            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
-                              <span className="text-pink-700 font-extrabold text-base">
-                                R$ {bolo.preco.toFixed(2).replace('.', ',')}
-                              </span>
-
-                              {isAdmin && (
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={() => handleEditarBolo(bolo)}
-                                    className="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-lg"
-                                  >
-                                    Editar
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeletarBolo(bolo.id)}
-                                    className="bg-red-100 text-red-700 text-xs px-2.5 py-1 rounded-lg"
-                                  >
-                                    Excluir
-                                  </button>
-                                </div>
-                              )}
-
-                              <button
-                                onClick={() => adicionarAoCarrinho(bolo)}
-                                className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow"
-                              >
-                                Adicionar
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {bolosFiltrados.map((bolo) => (
+                  <div key={bolo.id} className="bg-white rounded-xl shadow p-5 border border-pink-100 relative">
+                    {bolo.novidade && (
+                      <span className="absolute top-2 left-2 bg-pink-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-full animate-pulse">
+                        ✨ Novidade
+                      </span>
                     )}
-                  </motion.div>
-                </AnimatePresence>
-              )}
-            </div>
-
-            {/* COLUNA DIREITA: CARRINHO E CHECKBOX DE PEDIDO */}
-            {carrinho.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-md p-5 border border-pink-200 sticky top-4">
-                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2 border-b pb-2">
-                  <span>🛒</span> Seu Pedido ({totalItensCarrinho})
-                </h3>
-
-                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                  {carrinho.map((item) => (
-                    <div key={item.id} className="bg-pink-50/50 p-3 rounded-xl border border-pink-100 flex flex-col gap-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-bold text-gray-800 text-xs">{item.nome}</h4>
-                          <span className="text-[11px] text-pink-700 font-semibold">
-                            R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}
-                          </span>
-                        </div>
-
-                        <button
-                          onClick={() => alterarQuantidade(item.id, -1)}
-                          className="text-gray-400 hover:text-red-600 text-xs font-bold"
-                        >
-                          ✕
-                        </button>
-                      </div>
-
-                      {item.nome.toLowerCase().includes('cenoura') && (
-                        <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-pink-200 text-[11px]">
-                          <span className="text-gray-600 font-medium">Granulado:</span>
-                          <button
-                            onClick={() => alterarGranulado(item.id, true)}
-                            className={`px-2 py-0.5 rounded ${item.comGranulado ? 'bg-pink-600 text-white font-bold' : 'bg-gray-100 text-gray-600'}`}
-                          >
-                            Com
-                          </button>
-                          <button
-                            onClick={() => alterarGranulado(item.id, false)}
-                            className={`px-2 py-0.5 rounded ${!item.comGranulado ? 'bg-pink-600 text-white font-bold' : 'bg-gray-100 text-gray-600'}`}
-                          >
-                            Sem
-                          </button>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-gray-800 text-lg">{bolo.nome}</h3>
+                      <span className="text-pink-700 font-extrabold text-base">R$ {bolo.preco.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <p className="text-gray-600 text-xs mb-4">{bolo.descricao}</p>
+                    <div className="pt-3 border-t flex justify-between items-center">
+                      {isAdmin && (
+                        <div className="flex gap-1">
+                          <button onClick={() => handleEditarBolo(bolo)} className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">Editar</button>
+                          <button onClick={() => handleDeletarBolo(bolo.id)} className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded">Excluir</button>
                         </div>
                       )}
+                      <button onClick={() => adicionarAoCarrinho(bolo)} className="bg-pink-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow ml-auto">
+                        Adicionar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-                      <div className="flex items-center justify-between pt-1">
-                        <div className="flex items-center gap-2 bg-white rounded-lg border border-pink-200 px-2 py-0.5">
-                          <button onClick={() => alterarQuantidade(item.id, -1)} className="text-pink-600 font-bold px-1">-</button>
-                          <span className="text-xs font-bold w-4 text-center">{item.quantidade}</span>
-                          <button onClick={() => alterarQuantidade(item.id, 1)} className="text-pink-600 font-bold px-1">+</button>
-                        </div>
+            {/* CARRINHO & DADOS DO CLIENTE */}
+            {carrinho.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-md p-5 border border-pink-200 sticky top-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-3 border-b pb-2">
+                  🛒 Seu Pedido ({totalItensCarrinho})
+                </h3>
+
+                <div className="space-y-3 max-h-56 overflow-y-auto">
+                  {carrinho.map((item) => (
+                    <div key={item.id} className="bg-pink-50/50 p-3 rounded-xl flex justify-between items-center">
+                      <div>
+                        <h4 className="font-bold text-xs">{item.nome}</h4>
+                        <span className="text-xs text-pink-700">R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}</span>
+                      </div>
+                      <div className="flex gap-1 items-center">
+                        <button onClick={() => alterarQuantidade(item.id, -1)} className="px-2 py-0.5 bg-white border rounded font-bold">-</button>
+                        <span className="text-xs font-bold">{item.quantidade}</span>
+                        <button onClick={() => alterarQuantidade(item.id, 1)} className="px-2 py-0.5 bg-white border rounded font-bold">+</button>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* FORMULÁRIO DE DADOS DO CLIENTE */}
-                <div className="mt-4 pt-4 border-t space-y-3">
-                  <h4 className="text-xs font-bold text-gray-700">Dados para Encomenda</h4>
-
-                  <input
-                    type="text"
-                    placeholder="Seu Nome Completo *"
-                    value={nomeCliente}
-                    onChange={(e) => setNomeCliente(e.target.value)}
-                    className="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-pink-500"
+                <div className="mt-4 pt-4 border-t space-y-2">
+                  <input 
+                    type="text" 
+                    placeholder="Seu Nome Completo *" 
+                    value={nomeCliente} 
+                    onChange={(e) => setNomeCliente(e.target.value)} 
+                    className="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-pink-500" 
                   />
-
-                  <div className="flex gap-2">
-                    <select
-                      value={formaEntrega}
-                      onChange={(e) => setFormaEntrega(e.target.value)}
-                      className="flex-1 text-xs p-2.5 border rounded-lg bg-white focus:outline-none focus:border-pink-500 font-semibold text-pink-700"
-                    >
-                      <option value="entrega">🚚 Entrega (Taxa R$ 7,90)</option>
-                      <option value="retirada">🏠 Retirada no Local</option>
-                    </select>
-                  </div>
-
-                  {formaEntrega === 'entrega' && (
-                    <div className="space-y-2 bg-pink-50/70 p-2.5 rounded-xl border border-pink-100">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Digite seu CEP (apenas números)"
-                          value={cepCliente}
-                          maxLength={8}
-                          onChange={(e) => buscarCep(e.target.value)}
-                          className="flex-1 text-xs p-2 border rounded-lg bg-white"
-                        />
-                        {buscandoCep && <span className="text-[10px] text-pink-600 self-center">Buscando...</span>}
-                      </div>
-
-                      <input
-                        type="text"
-                        placeholder="Endereço (Rua, Bairro - Cidade)"
-                        value={enderecoCliente}
-                        onChange={(e) => setEnderecoCliente(e.target.value)}
-                        className="w-full text-xs p-2 border rounded-lg bg-white"
-                      />
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          placeholder="Número *"
-                          value={numeroCliente}
-                          onChange={(e) => setNumeroCliente(e.target.value)}
-                          className="text-xs p-2 border rounded-lg bg-white"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Complemento (Apto, Bloco)"
-                          value={complementoCliente}
-                          onChange={(e) => setComplementoCliente(e.target.value)}
-                          className="text-xs p-2 border rounded-lg bg-white"
-                        />
-                      </div>
-                    </div>
-                  )}
+                  <input 
+                    type="text" 
+                    placeholder="Seu WhatsApp / Telefone (com DDD) *" 
+                    value={telefoneCliente} 
+                    onChange={(e) => setTelefoneCliente(e.target.value)} 
+                    className="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-pink-500 font-semibold text-pink-700" 
+                  />
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <div>
                       <label className="block text-[10px] font-bold text-gray-600 mb-1">Data Desejada *</label>
-                      <input
-                        type="date"
-                        value={dataDesejada}
-                        onChange={(e) => setDataDesejada(e.target.value)}
-                        className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
-                      />
+                      <input type="date" value={dataDesejada} onChange={(e) => setDataDesejada(e.target.value)} className="w-full text-xs p-2 border rounded-lg" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-gray-600 mb-1">Horário *</label>
-                      <input
-                        type="time"
-                        value={horarioDesejado}
-                        onChange={(e) => setHorarioDesejado(e.target.value)}
-                        className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
-                      />
+                      <input type="time" value={horarioDesejado} onChange={(e) => setHorarioDesejado(e.target.value)} className="w-full text-xs p-2 border rounded-lg" />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Forma de Pagamento</label>
-                    <select
-                      value={formaPagamento}
-                      onChange={(e) => setFormaPagamento(e.target.value)}
-                      className="w-full text-xs p-2.5 border rounded-lg bg-white focus:outline-none focus:border-pink-500 font-semibold"
-                    >
-                      <option value="Pix">Pix Antecipado</option>
-                      <option value="Cartao">Cartão (Na entrega / Retirada)</option>
-                      <option value="Dinheiro">Dinheiro</option>
-                    </select>
-                  </div>
-
-                  {formaPagamento === 'Dinheiro' && (
-                    <input
-                      type="text"
-                      placeholder="Precisa de troco para quanto? (Ex: R$ 50)"
-                      value={precisaTroco}
-                      onChange={(e) => setPrecisaTroco(e.target.value)}
-                      className="w-full text-xs p-2 border rounded-lg bg-white"
-                    />
-                  )}
-
-                  <textarea
-                    placeholder="Observações adicionais para o pedido..."
-                    value={observacoes}
-                    onChange={(e) => setObservacoes(e.target.value)}
-                    rows={2}
-                    className="w-full text-xs p-2 border rounded-lg focus:outline-none focus:border-pink-500"
-                  />
-                </div>
-
-                {/* TOTAIS E BOTÃO DE WHATSAPP */}
-                <div className="mt-4 pt-3 border-t space-y-1.5">
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span>Subtotal:</span>
-                    <span>R$ {calcularSubtotal().toFixed(2).replace('.', ',')}</span>
-                  </div>
-                  {formaEntrega === 'entrega' && (
-                    <div className="flex justify-between text-xs text-gray-600">
-                      <span>Taxa de Entrega:</span>
-                      <span>R$ {VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-bold text-sm text-gray-800 pt-1 border-t">
-                    <span>Total Geral:</span>
-                    <span className="text-pink-700">R$ {calcularTotal().toFixed(2).replace('.', ',')}</span>
-                  </div>
-
-                  <button
-                    onClick={processarCheckout}
-                    className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2"
-                  >
+                  <button onClick={processarCheckout} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs mt-3 shadow flex items-center justify-center gap-2">
                     <span>💬</span> Enviar Pedido via WhatsApp
                   </button>
                 </div>
               </div>
             )}
-
           </div>
         </main>
       </div>
 
-      {/* MODAL DO PIX */}
-      {mostrarModalPix && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border-2 border-pink-300 text-center relative animate-scaleIn">
-            <h3 className="text-lg font-bold text-pink-700 mb-1">Pagamento via Pix</h3>
-            <p className="text-xs text-gray-600 mb-4">Copie a chave Pix abaixo e realize o pagamento</p>
-
-            <div className="bg-pink-50 p-4 rounded-2xl border border-pink-200 mb-4">
-              <span className="text-[11px] font-mono break-all text-gray-700 block select-all bg-white p-2.5 rounded-xl border border-pink-100">
-                {CHAVE_PIX}
-              </span>
-              <button
-                onClick={copiarChavePix}
-                className="mt-3 w-full bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold py-2 rounded-xl transition shadow"
-              >
-                {chaveCopiada ? "✨ Chave Copiada com Sucesso!" : "Copiar Chave Pix"}
-              </button>
-            </div>
-
-            <div className="mb-4 bg-amber-50 p-3 rounded-xl border border-amber-200">
-              <span className="text-xs text-amber-900 font-bold block mb-0.5">Tempo limite para pagamento:</span>
-              <span className="text-xl font-extrabold text-amber-700 font-mono">{formatarTempo(tempoRestante)}</span>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={enviarPedidoWhatsApp}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-xl transition shadow"
-              >
-                Já paguei, Enviar Pedido no WhatsApp ✅
-              </button>
-              <button
-                onClick={() => setMostrarModalPix(false)}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-2 rounded-xl transition"
-              >
-                Cancelar / Voltar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* RODAPÉ */}
-      <footer className="bg-amber-100/60 text-center py-6 px-4 border-t border-pink-100 mt-12 text-xs text-pink-900/80">
-        <p className="font-semibold">Caseirinhos da Beth &copy; {new Date().getFullYear()} - Todos os direitos reservados</p>
-        <p className="mt-1">Feito com carinho para adoçar o seu dia 🍰</p>
+      <footer className="bg-amber-100/60 text-center py-6 border-t mt-12 text-xs text-pink-900/80">
+        <p className="font-semibold">Caseirinhos da Beth &copy; {new Date().getFullYear()}</p>
       </footer>
     </div>
   );
