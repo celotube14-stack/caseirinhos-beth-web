@@ -437,7 +437,7 @@ export default function App() {
   const enviarPedidoWhatsApp = () => {
     const totalPedido = calcularTotal();
     
-    // Grava no Firestore em segundo plano sem bloquear a abertura do WhatsApp
+    // Grava no Firestore em segundo plano sem bloquear
     addDoc(collection(db, "orders"), {
       cliente: nomeCliente,
       telefone: telefoneCliente,
@@ -505,8 +505,11 @@ export default function App() {
     }
 
     const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(mensagem)}`;
-    window.open(url, '_blank');
+    
     setMostrarModalPix(false);
+    
+    // Usar window.location.href para garantir o redirecionamento imediato no mobile e desktop sem bloqueadores
+    window.location.href = url;
   };
 
   const categorias = [
