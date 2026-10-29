@@ -58,7 +58,7 @@ export default function App() {
 
   // Checkout & Agendamento
   const [nomeCliente, setNomeCliente] = useState('');
-  const [telefoneCliente, setTelefoneCliente] = useState(''); // Novo estado para o WhatsApp do cliente
+  const [telefoneCliente, setTelefoneCliente] = useState('');
   const [cepCliente, setCepCliente] = useState('');
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [enderecoCliente, setEnderecoCliente] = useState('');
@@ -435,7 +435,6 @@ export default function App() {
     setTimeout(() => setChaveCopiada(false), 3000);
   };
 
-  // Salvar pedido no Firestore (com telefone) e Abrir WhatsApp
   const enviarPedidoWhatsApp = async () => {
     const totalPedido = calcularTotal();
     
@@ -523,12 +522,10 @@ export default function App() {
 
   const isAdmin = user && user.email === "celotube14@gmail.com";
 
-  // CÁLCULOS FINANCEIROS
   const pedidosConcluidos = pedidos.filter(p => p.status === 'Concluído');
   const faturamentoTotal = pedidosConcluidos.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
   const ticketMedio = pedidosConcluidos.length > 0 ? (faturamentoTotal / pedidosConcluidos.length) : 0;
 
-  // GERAR LISTA DE CLIENTES ÚNICOS A PARTIR DOS PEDIDOS
   const clientesMap = {};
   pedidos.forEach(p => {
     const telKey = p.telefone || p.cliente;
@@ -706,11 +703,10 @@ export default function App() {
                 </div>
               )}
 
-              {/* ABA DE CONTATOS / CLIENTES */}
               {abaAdmin === 'clientes' && (
                 <div>
                   <h3 className="font-bold text-gray-800 text-lg mb-2">Lista de Contatos dos Clientes</h3>
-                  <p className="text-xs text-gray-500 mb-4">Aqui estão reunidos todos os clientes que já fizeram pedidos no site, com o resumo de compras e WhatsApp para contato.</p>
+                  <p className="text-xs text-gray-500 mb-4">Aqui estão reunidos todos os clientes que já fizeram pedidos no site.</p>
                   
                   {listaClientes.length === 0 ? (
                     <p className="text-gray-500 text-xs text-center py-6">Nenhum cliente cadastrado ainda.</p>
@@ -731,7 +727,7 @@ export default function App() {
                               </a>
                             </div>
                             <p className="text-xs text-gray-600 mb-1">📱 <strong>WhatsApp:</strong> {cli.telefone}</p>
-                            <p className="text-xs text-gray-600 mb-1">🛍️ <strong>Total de Pedidos:</strong> {cli.totalPedidos} {cli.totalPedidos === 1 ? 'pedido' : 'pedidos'}</p>
+                            <p className="text-xs text-gray-600 mb-1">🛍️ <strong>Total de Pedidos:</strong> {cli.totalPedidos}</p>
                             <p className="text-xs text-gray-600">💰 <strong>Valor Total Gasto:</strong> R$ {cli.valorGasto.toFixed(2).replace('.', ',')}</p>
                           </div>
                         </div>
@@ -812,28 +808,61 @@ export default function App() {
                 </h2>
               </div>
 
+              {/* VITRINE DE BOLOS COM LAYOUT CORRIGIDO E ELEGANTE */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {bolosFiltrados.map((bolo) => (
-                  <div key={bolo.id} className="bg-white rounded-xl shadow p-5 border border-pink-100 relative">
+                  <div
+                    key={bolo.id}
+                    className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition relative overflow-hidden pt-8"
+                  >
                     {bolo.novidade && (
-                      <span className="absolute top-2 left-2 bg-pink-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-full animate-pulse">
+                      <span className="absolute top-2 left-2 bg-pink-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-full shadow flex items-center gap-1 z-10 animate-pulse">
                         ✨ Novidade
                       </span>
                     )}
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-gray-800 text-lg">{bolo.nome}</h3>
-                      <span className="text-pink-700 font-extrabold text-base">R$ {bolo.preco.toFixed(2).replace('.', ',')}</span>
+
+                    <div>
+                      <div className="flex justify-between items-start gap-2 mb-2">
+                        <h3 className="font-bold text-gray-800 text-lg leading-tight">{bolo.nome}</h3>
+                        <span className="text-pink-700 font-extrabold text-base whitespace-nowrap">
+                          R$ {bolo.preco.toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+
+                      <span className="inline-block bg-pink-50 text-pink-800 text-[11px] font-semibold px-2.5 py-0.5 rounded-full mb-2">
+                        {bolo.categoria}
+                      </span>
+
+                      <p className="text-gray-600 text-xs leading-relaxed mb-4 min-h-[32px]">
+                        {bolo.descricao || "Feito com ingredientes selecionados e muito carinho."}
+                      </p>
                     </div>
-                    <p className="text-gray-600 text-xs mb-4">{bolo.descricao}</p>
-                    <div className="pt-3 border-t flex justify-between items-center">
-                      {isAdmin && (
-                        <div className="flex gap-1">
-                          <button onClick={() => handleEditarBolo(bolo)} className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">Editar</button>
-                          <button onClick={() => handleDeletarBolo(bolo.id)} className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded">Excluir</button>
+
+                    <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                      {isAdmin ? (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditarBolo(bolo)}
+                            className="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeletarBolo(bolo.id)}
+                            className="bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                          >
+                            Excluir
+                          </button>
                         </div>
+                      ) : (
+                        <span className="text-[11px] text-gray-400 font-medium">Sob encomenda</span>
                       )}
-                      <button onClick={() => adicionarAoCarrinho(bolo)} className="bg-pink-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow ml-auto">
-                        Adicionar
+
+                      <button
+                        onClick={() => adicionarAoCarrinho(bolo)}
+                        className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow flex items-center gap-1.5 ml-auto"
+                      >
+                        <span>🛒</span> Adicionar
                       </button>
                     </div>
                   </div>
