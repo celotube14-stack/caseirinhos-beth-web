@@ -22,32 +22,41 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [loadingInicial, setLoadingInicial] = useState(true);
 
+  // Referências para rolagem suave
   const cardapioRef = useRef(null);
+  const carrinhoRef = useRef(null);
 
+  // Autenticação Admin & Modal Login
   const [user, setUser] = useState(null);
   const [mostrarModalLogin, setMostrarModalLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erroLogin, setErroLogin] = useState('');
 
+  // Aba ativa do Admin: 'pedidos', 'clientes' ou 'cardapio'
   const [abaAdmin, setAbaAdmin] = useState('pedidos');
 
+  // Estados do Painel CRUD Admin
   const [boloEditando, setBoloEditando] = useState(null);
   const [nomeForm, setNomeForm] = useState('');
   const [precoForm, setPrecoForm] = useState('');
   const [categoriaForm, setCategoriaForm] = useState('Bolos Tradicionais');
-  const [descricaoForm, setDescdescricaoForm] = useState('');
+  const [descricaoForm, setDescricaoForm] = useState('');
   const [destaqueForm, setDestaqueForm] = useState(false);
   const [novidadeForm, setNovidadeForm] = useState(false);
   const [novidadeDataForm, setNovidadeDataForm] = useState(null);
 
+  // Filtros, Busca e Layout
   const [categoriaAtiva, setCategoriaAtiva] = useState('Todas');
   const [busca, setBusca] = useState('');
-  const [modoVisualizacao, setModoVisualizacao] = useState('grade');
 
+  // Status de Funcionamento
   const [lojaAberta, setLojaAberta] = useState(true);
+
+  // Toast Notificação
   const [toastMsg, setToastMsg] = useState('');
 
+  // Checkout & Agendamento
   const [nomeCliente, setNomeCliente] = useState('');
   const [telefoneCliente, setTelefoneCliente] = useState('');
   const [cepCliente, setCepCliente] = useState('');
@@ -64,6 +73,7 @@ export default function App() {
 
   const VALOR_TAXA_ENTREGA = 7.90;
 
+  // Modal do PIX
   const [mostrarModalPix, setMostrarModalPix] = useState(false);
   const [chaveCopiada, setChaveCopiada] = useState(false);
   const [tempoRestante, setTempoRestante] = useState(300);
@@ -71,6 +81,7 @@ export default function App() {
   const NUMERO_WHATSAPP = "5511996808580"; 
   const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
 
+  // Loading de abertura
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoadingInicial(false);
@@ -111,6 +122,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // Escutar produtos (Bolos) com expiração de 15 dias para novidades
   useEffect(() => {
     setLoading(true);
     const bolosRef = collection(db, "bolos");
@@ -156,6 +168,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Escutar Pedidos (Orders) em Tempo Real para o Admin
   useEffect(() => {
     if (!user) return;
 
@@ -177,6 +190,7 @@ export default function App() {
     return () => unsubscribeOrders();
   }, [user]);
 
+  // Busca do CEP via API ViaCEP
   const buscarCep = async (cep) => {
     const cepLimpo = cep.replace(/\D/g, '');
     setCepCliente(cepLimpo);
@@ -304,7 +318,7 @@ export default function App() {
     setNomeForm('');
     setPrecoForm('');
     setCategoriaForm('Bolos Tradicionais');
-    setDescricoForm('');
+    setDescricaoForm('');
     setDestaqueForm(false);
     setNovidadeForm(false);
     setNovidadeDataForm(null);
@@ -326,6 +340,13 @@ export default function App() {
       return [...prev, { ...bolo, quantidade: 1, comGranulado: true }];
     });
     exibirToast(`"${bolo.nome}" adicionado ao pedido!`);
+
+    // Rolar automaticamente para o carrinho/formulário ao adicionar
+    setTimeout(() => {
+      if (carrinhoRef.current) {
+        carrinhoRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 150);
   };
 
   const alterarQuantidade = (id, delta) => {
@@ -786,7 +807,7 @@ export default function App() {
                 </h2>
               </div>
 
-              {/* VITRINE DE BOLOS COM DESIGN MODERNO E ELEGANTE */}
+              {/* VITRINE DE BOLOS */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {bolosFiltrados.map((bolo) => (
                   <div
@@ -852,9 +873,9 @@ export default function App() {
               </div>
             </div>
 
-            {/* CARRINHO & DADOS DO CLIENTE */}
+            {/* CARRINHO & DADOS DO CLIENTE COM ENDEREÇO E WHATSAPP */}
             {carrinho.length > 0 && (
-              <div className="bg-white rounded-3xl shadow-xl p-6 border border-pink-200 sticky top-4">
+              <div ref={carrinhoRef} className="bg-white rounded-3xl shadow-xl p-6 border border-pink-200 sticky top-4">
                 <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-3 flex items-center gap-2">
                   <span>🛒</span> Seu Pedido ({totalItensCarrinho})
                 </h3>
@@ -875,7 +896,10 @@ export default function App() {
                   ))}
                 </div>
 
+                {/* FORMULÁRIO DE DADOS DO CLIENTE RESTAURADO */}
                 <div className="mt-4 pt-4 border-t space-y-3">
+                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide">Dados para Encomenda</h4>
+
                   <input 
                     type="text" 
                     placeholder="Seu Nome Completo *" 
@@ -883,6 +907,7 @@ export default function App() {
                     onChange={(e) => setNomeCliente(e.target.value)} 
                     className="w-full text-xs p-3 border border-pink-200 rounded-xl focus:outline-none focus:border-pink-500 bg-pink-50/30" 
                   />
+
                   <input 
                     type="text" 
                     placeholder="Seu WhatsApp / Telefone (com DDD) *" 
@@ -890,6 +915,56 @@ export default function App() {
                     onChange={(e) => setTelefoneCliente(e.target.value)} 
                     className="w-full text-xs p-3 border border-pink-200 rounded-xl focus:outline-none focus:border-pink-500 font-semibold text-pink-700 bg-pink-50/30" 
                   />
+
+                  <select
+                    value={formaEntrega}
+                    onChange={(e) => setFormaEntrega(e.target.value)}
+                    className="w-full text-xs p-3 border border-pink-200 rounded-xl bg-pink-50/30 focus:outline-none focus:border-pink-500 font-semibold text-pink-700"
+                  >
+                    <option value="entrega">🚚 Entrega (Taxa R$ 7,90)</option>
+                    <option value="retirada">🏠 Retirada no Local</option>
+                  </select>
+
+                  {formaEntrega === 'entrega' && (
+                    <div className="space-y-2.5 bg-pink-50/70 p-3 rounded-2xl border border-pink-100">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Digite seu CEP (apenas números)"
+                          value={cepCliente}
+                          maxLength={8}
+                          onChange={(e) => buscarCep(e.target.value)}
+                          className="flex-1 text-xs p-2.5 border rounded-xl bg-white"
+                        />
+                        {buscandoCep && <span className="text-[10px] text-pink-600 self-center font-bold">Buscando...</span>}
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="Endereço (Rua, Bairro - Cidade)"
+                        value={enderecoCliente}
+                        onChange={(e) => setEnderecoCliente(e.target.value)}
+                        className="w-full text-xs p-2.5 border rounded-xl bg-white"
+                      />
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Número *"
+                          value={numeroCliente}
+                          onChange={(e) => setNumeroCliente(e.target.value)}
+                          className="text-xs p-2.5 border rounded-xl bg-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Complemento"
+                          value={complementoCliente}
+                          onChange={(e) => setComplementoCliente(e.target.value)}
+                          className="text-xs p-2.5 border rounded-xl bg-white"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <div>
@@ -900,6 +975,55 @@ export default function App() {
                       <label className="block text-[10px] font-bold text-gray-600 mb-1">Horário *</label>
                       <input type="time" value={horarioDesejado} onChange={(e) => setHorarioDesejado(e.target.value)} className="w-full text-xs p-2.5 border border-pink-200 rounded-xl bg-pink-50/30" />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Forma de Pagamento</label>
+                    <select
+                      value={formaPagamento}
+                      onChange={(e) => setFormaPagamento(e.target.value)}
+                      className="w-full text-xs p-2.5 border border-pink-200 rounded-xl bg-pink-50/30 font-semibold"
+                    >
+                      <option value="Pix">Pix Antecipado</option>
+                      <option value="Cartao">Cartão (Na entrega / Retirada)</option>
+                      <option value="Dinheiro">Dinheiro</option>
+                    </select>
+                  </div>
+
+                  {formaPagamento === 'Dinheiro' && (
+                    <input
+                      type="text"
+                      placeholder="Precisa de troco para quanto? (Ex: R$ 50)"
+                      value={precisaTroco}
+                      onChange={(e) => setPrecisaTroco(e.target.value)}
+                      className="w-full text-xs p-2.5 border border-pink-200 rounded-xl bg-pink-50/30"
+                    />
+                  )}
+
+                  <textarea
+                    placeholder="Observações adicionais para o pedido..."
+                    value={observacoes}
+                    onChange={(e) => setObservacoes(e.target.value)}
+                    rows={2}
+                    className="w-full text-xs p-2.5 border border-pink-200 rounded-xl bg-pink-50/30"
+                  />
+                </div>
+
+                {/* TOTAIS E BOTÃO WHATSAPP */}
+                <div className="mt-4 pt-3 border-t space-y-1.5">
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>Subtotal:</span>
+                    <span>R$ {calcularSubtotal().toFixed(2).replace('.', ',')}</span>
+                  </div>
+                  {formaEntrega === 'entrega' && (
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <span>Taxa de Entrega:</span>
+                      <span>R$ {VALOR_TAXA_ENTREGA.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-sm text-gray-800 pt-1 border-t">
+                    <span>Total Geral:</span>
+                    <span className="text-pink-700">R$ {calcularTotal().toFixed(2).replace('.', ',')}</span>
                   </div>
 
                   <button onClick={processarCheckout} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl text-xs mt-3 shadow-lg flex items-center justify-center gap-2 transition">
