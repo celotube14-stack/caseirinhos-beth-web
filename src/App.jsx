@@ -22,41 +22,32 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [loadingInicial, setLoadingInicial] = useState(true);
 
-  // Referência para rolar a página até o cardápio
   const cardapioRef = useRef(null);
 
-  // Autenticação Admin & Modal Login
   const [user, setUser] = useState(null);
   const [mostrarModalLogin, setMostrarModalLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erroLogin, setErroLogin] = useState('');
 
-  // Aba ativa do Admin: 'pedidos', 'clientes' ou 'cardapio'
   const [abaAdmin, setAbaAdmin] = useState('pedidos');
 
-  // Estados do Painel CRUD Admin
   const [boloEditando, setBoloEditando] = useState(null);
   const [nomeForm, setNomeForm] = useState('');
   const [precoForm, setPrecoForm] = useState('');
   const [categoriaForm, setCategoriaForm] = useState('Bolos Tradicionais');
-  const [descricaoForm, setDescricaoForm] = useState('');
+  const [descricaoForm, setDescdescricaoForm] = useState('');
   const [destaqueForm, setDestaqueForm] = useState(false);
   const [novidadeForm, setNovidadeForm] = useState(false);
   const [novidadeDataForm, setNovidadeDataForm] = useState(null);
 
-  // Filtros, Busca e Layout
   const [categoriaAtiva, setCategoriaAtiva] = useState('Todas');
   const [busca, setBusca] = useState('');
   const [modoVisualizacao, setModoVisualizacao] = useState('grade');
 
-  // Status de Funcionamento
   const [lojaAberta, setLojaAberta] = useState(true);
-
-  // Toast Notificação
   const [toastMsg, setToastMsg] = useState('');
 
-  // Checkout & Agendamento
   const [nomeCliente, setNomeCliente] = useState('');
   const [telefoneCliente, setTelefoneCliente] = useState('');
   const [cepCliente, setCepCliente] = useState('');
@@ -73,7 +64,6 @@ export default function App() {
 
   const VALOR_TAXA_ENTREGA = 7.90;
 
-  // Modal do PIX
   const [mostrarModalPix, setMostrarModalPix] = useState(false);
   const [chaveCopiada, setChaveCopiada] = useState(false);
   const [tempoRestante, setTempoRestante] = useState(300);
@@ -81,7 +71,6 @@ export default function App() {
   const NUMERO_WHATSAPP = "5511996808580"; 
   const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
 
-  // Loading de abertura
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoadingInicial(false);
@@ -122,7 +111,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Escutar produtos (Bolos)
   useEffect(() => {
     setLoading(true);
     const bolosRef = collection(db, "bolos");
@@ -168,7 +156,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Escutar Pedidos (Orders) em Tempo Real para o Admin
   useEffect(() => {
     if (!user) return;
 
@@ -190,7 +177,6 @@ export default function App() {
     return () => unsubscribeOrders();
   }, [user]);
 
-  // Busca do CEP via API ViaCEP
   const buscarCep = async (cep) => {
     const cepLimpo = cep.replace(/\D/g, '');
     setCepCliente(cepLimpo);
@@ -318,7 +304,7 @@ export default function App() {
     setNomeForm('');
     setPrecoForm('');
     setCategoriaForm('Bolos Tradicionais');
-    setDescricaoForm('');
+    setDescricoForm('');
     setDestaqueForm(false);
     setNovidadeForm(false);
     setNovidadeDataForm(null);
@@ -353,14 +339,6 @@ export default function App() {
           return item;
         })
         .filter(Boolean)
-    );
-  };
-
-  const alterarGranulado = (id, valor) => {
-    setCarrinho((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, comGranulado: valor } : item
-      )
     );
   };
 
@@ -558,15 +536,15 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-pink-50 font-sans pb-24 md:pb-12 relative flex flex-col justify-between">
+    <div className="min-h-screen bg-pink-50/50 font-sans pb-24 md:pb-12 relative flex flex-col justify-between">
       <div>
         {toastMsg && (
-          <div className="fixed top-5 right-5 z-50 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-xl border border-gray-700 animate-bounce">
+          <div className="fixed top-5 right-5 z-50 bg-gray-900 text-white text-sm font-semibold px-4 py-3 rounded-2xl shadow-xl border border-gray-700 animate-bounce">
             ✨ {toastMsg}
           </div>
         )}
 
-        <header className="bg-amber-50/80 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
+        <header className="bg-amber-50/90 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
           {isAdmin ? (
             <div className="absolute top-3 right-4 z-10 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-full border border-pink-200 shadow-sm">
               <span className="text-xs font-bold text-pink-700">Admin Ativo</span>
@@ -601,7 +579,7 @@ export default function App() {
 
         {mostrarModalLogin && !isAdmin && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl border border-pink-100">
+            <div className="bg-white rounded-3xl max-w-xs w-full p-6 shadow-2xl border border-pink-100">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Acesso Administrativo</h3>
               <form onSubmit={handleLogin} className="space-y-3">
                 <input
@@ -610,7 +588,7 @@ export default function App() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full text-sm px-3 py-2 border rounded-lg"
+                  className="w-full text-sm px-3 py-2 border rounded-xl"
                 />
                 <input
                   type="password"
@@ -618,9 +596,9 @@ export default function App() {
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   required
-                  className="w-full text-sm px-3 py-2 border rounded-lg"
+                  className="w-full text-sm px-3 py-2 border rounded-xl"
                 />
-                <button type="submit" className="w-full bg-pink-600 text-white font-bold py-2 rounded-xl text-sm">Entrar</button>
+                <button type="submit" className="w-full bg-pink-600 text-white font-bold py-2.5 rounded-xl text-sm shadow">Entrar</button>
               </form>
             </div>
           </div>
@@ -628,7 +606,7 @@ export default function App() {
 
         <main className="max-w-7xl mx-auto p-4 md:p-6">
           {isAdmin && (
-            <section className="bg-white rounded-2xl shadow-lg p-6 border-2 border-pink-300 mb-8">
+            <section className="bg-white rounded-3xl shadow-xl p-6 border-2 border-pink-200 mb-8">
               <div className="flex gap-2 sm:gap-3 mb-6 border-b pb-4 overflow-x-auto">
                 <button
                   onClick={() => setAbaAdmin('pedidos')}
@@ -653,15 +631,15 @@ export default function App() {
               {abaAdmin === 'pedidos' && (
                 <div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl">
                       <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Faturamento Recebido</span>
                       <h3 className="text-2xl font-extrabold text-emerald-700 mt-1">R$ {faturamentoTotal.toFixed(2).replace('.', ',')}</h3>
                     </div>
-                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl">
                       <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Pedidos Finalizados</span>
                       <h3 className="text-2xl font-extrabold text-amber-700 mt-1">{pedidosConcluidos.length} / {pedidos.length}</h3>
                     </div>
-                    <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl">
+                    <div className="bg-purple-50 border border-purple-200 p-4 rounded-2xl">
                       <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">Ticket Médio</span>
                       <h3 className="text-2xl font-extrabold text-purple-700 mt-1">R$ {ticketMedio.toFixed(2).replace('.', ',')}</h3>
                     </div>
@@ -673,27 +651,27 @@ export default function App() {
                   ) : (
                     <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                       {pedidos.map((ped) => (
-                        <div key={ped.id} className="border border-pink-100 bg-pink-50/30 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+                        <div key={ped.id} className="border border-pink-100 bg-pink-50/30 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                               <h4 className="font-bold text-gray-800 text-sm">{ped.cliente}</h4>
-                              <span className="text-xs text-pink-600 bg-pink-100 px-2 py-0.5 rounded font-mono">📱 {ped.telefone || 'Sem WhatsApp'}</span>
+                              <span className="text-xs text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full font-mono">📱 {ped.telefone || 'Sem WhatsApp'}</span>
                               <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${ped.status === 'Concluído' ? 'bg-emerald-100 text-emerald-800' : ped.status === 'Em Produção' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
                                 {ped.status || 'Pendente'}
                               </span>
                             </div>
                             <p className="text-xs text-gray-600">📅 <strong>Data:</strong> {ped.dataEncomenda?.split('-').reverse().join('/')} às {ped.horarioEncomenda}</p>
                             <p className="text-xs text-gray-600">🚚 <strong>Tipo:</strong> {ped.formaEntrega === 'entrega' ? `Entrega (${ped.endereco}, Nº ${ped.numero})` : 'Retirada no Local'}</p>
-                            <div className="mt-2 text-xs bg-white p-2 rounded-lg border border-pink-100">
+                            <div className="mt-2 text-xs bg-white p-2.5 rounded-xl border border-pink-100">
                               <strong>Itens:</strong> {ped.itens?.map(i => `${i.quantidade}x ${i.nome}`).join(' • ')}
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0">
                             <span className="text-lg font-black text-pink-700">R$ {parseFloat(ped.total || 0).toFixed(2).replace('.', ',')}</span>
                             <div className="flex gap-1 flex-wrap">
-                              <button onClick={() => handleAtualizarStatusPedido(ped.id, 'Em Produção')} className="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">👨‍🍳 Produção</button>
-                              <button onClick={() => handleAtualizarStatusPedido(ped.id, 'Concluído')} className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">✅ Concluir</button>
-                              <button onClick={() => handleAtualizarStatusPedido(ped.id, 'Cancelado')} className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">❌ Cancelar</button>
+                              <button onClick={() => handleAtualizarStatusPedido(ped.id, 'Em Produção')} className="bg-amber-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl shadow">👨‍🍳 Produção</button>
+                              <button onClick={() => handleAtualizarStatusPedido(ped.id, 'Concluído')} className="bg-emerald-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl shadow">✅ Concluir</button>
+                              <button onClick={() => handleAtualizarStatusPedido(ped.id, 'Cancelado')} className="bg-red-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl shadow">❌ Cancelar</button>
                             </div>
                           </div>
                         </div>
@@ -713,7 +691,7 @@ export default function App() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2">
                       {listaClientes.map((cli, index) => (
-                        <div key={index} className="bg-pink-50/50 border border-pink-200 p-4 rounded-xl shadow-sm flex flex-col justify-between">
+                        <div key={index} className="bg-pink-50/50 border border-pink-200 p-4 rounded-2xl shadow-sm flex flex-col justify-between">
                           <div>
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="font-bold text-gray-800 text-base">{cli.nome}</h4>
@@ -721,9 +699,9 @@ export default function App() {
                                 href={`https://api.whatsapp.com/send?phone=55${cli.telefone.replace(/\D/g, '')}&text=Olá%20${encodeURIComponent(cli.nome)}!%20Tudo%20bem?`} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow transition"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md transition"
                               >
-                                <span>💬</span> Chamar no WhatsApp
+                                <span>💬</span> WhatsApp
                               </a>
                             </div>
                             <p className="text-xs text-gray-600 mb-1">📱 <strong>WhatsApp:</strong> {cli.telefone}</p>
@@ -739,19 +717,19 @@ export default function App() {
 
               {abaAdmin === 'cardapio' && (
                 <form onSubmit={handleSalvarBolo} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input type="text" placeholder="Nome do Bolo" value={nomeForm} onChange={(e) => setNomeForm(e.target.value)} required className="text-sm p-2.5 border border-pink-200 rounded-lg" />
-                  <input type="number" step="0.01" placeholder="Preço (R$)" value={precoForm} onChange={(e) => setPrecoForm(e.target.value)} required className="text-sm p-2.5 border border-pink-200 rounded-lg" />
-                  <select value={categoriaForm} onChange={(e) => setCategoriaForm(e.target.value)} className="text-sm p-2.5 border border-pink-200 rounded-lg md:col-span-2">
+                  <input type="text" placeholder="Nome do Bolo" value={nomeForm} onChange={(e) => setNomeForm(e.target.value)} required className="text-sm p-3 border border-pink-200 rounded-xl" />
+                  <input type="number" step="0.01" placeholder="Preço (R$)" value={precoForm} onChange={(e) => setPrecoForm(e.target.value)} required className="text-sm p-3 border border-pink-200 rounded-xl" />
+                  <select value={categoriaForm} onChange={(e) => setCategoriaForm(e.target.value)} className="text-sm p-3 border border-pink-200 rounded-xl md:col-span-2 bg-white">
                     {categorias.filter(c => c !== "Todas" && c !== "Mais Vendidos").map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
-                  <textarea placeholder="Descrição..." value={descricaoForm} onChange={(e) => setDescricaoForm(e.target.value)} rows={2} className="md:col-span-2 text-sm p-2.5 border border-pink-200 rounded-lg" />
-                  <div className="md:col-span-2 flex gap-4 bg-pink-50 p-3 rounded-lg border">
-                    <label className="text-xs font-semibold cursor-pointer"><input type="checkbox" checked={destaqueForm} onChange={(e) => setDestaqueForm(e.target.checked)} /> Destaque ⭐</label>
-                    <label className="text-xs font-semibold text-pink-700 cursor-pointer"><input type="checkbox" checked={novidadeForm} onChange={(e) => setNovidadeForm(e.target.checked)} /> Novidade ✨ (15 dias)</label>
+                  <textarea placeholder="Descrição..." value={descricaoForm} onChange={(e) => setDescricaoForm(e.target.value)} rows={2} className="md:col-span-2 text-sm p-3 border border-pink-200 rounded-xl" />
+                  <div className="md:col-span-2 flex gap-4 bg-pink-50 p-3.5 rounded-xl border border-pink-100">
+                    <label className="text-xs font-semibold cursor-pointer flex items-center gap-1.5"><input type="checkbox" checked={destaqueForm} onChange={(e) => setDestaqueForm(e.target.checked)} className="w-4 h-4 rounded text-pink-600" /> Destaque ⭐</label>
+                    <label className="text-xs font-semibold text-pink-700 cursor-pointer flex items-center gap-1.5"><input type="checkbox" checked={novidadeForm} onChange={(e) => setNovidadeForm(e.target.checked)} className="w-4 h-4 rounded text-pink-600" /> Novidade ✨ (15 dias)</label>
                   </div>
-                  <button type="submit" className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm md:col-span-2">
+                  <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm md:col-span-2 shadow">
                     {boloEditando ? "Atualizar Bolo" : "Cadastrar Bolo"}
                   </button>
                 </form>
@@ -762,7 +740,7 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <div className={carrinho.length > 0 ? "lg:col-span-2" : "lg:col-span-3"}>
               {bolosNovidades.length > 0 && (
-                <div className="bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white rounded-2xl p-4 mb-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white rounded-3xl p-5 mb-6 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <span className="text-3xl animate-bounce">✨</span>
                     <div>
@@ -770,7 +748,7 @@ export default function App() {
                       <p className="text-xs text-pink-100">{bolosNovidades.map(b => b.nome).join(' • ')} — Garanta já a sua encomenda!</p>
                     </div>
                   </div>
-                  <button onClick={() => { setCategoriaAtiva('Mini Bolo Vulcão'); if (cardapioRef.current) { cardapioRef.current.scrollIntoView({ behavior: 'smooth' }); }}} className="bg-white text-pink-700 font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm self-end sm:self-center">
+                  <button onClick={() => { setCategoriaAtiva('Mini Bolo Vulcão'); if (cardapioRef.current) { cardapioRef.current.scrollIntoView({ behavior: 'smooth' }); }}} className="bg-white text-pink-700 hover:bg-pink-50 font-bold text-xs px-5 py-3 rounded-2xl shadow-md self-end sm:self-center transition">
                     Ver Delícias 🌋
                   </button>
                 </div>
@@ -784,7 +762,7 @@ export default function App() {
                     <button
                       key={cat}
                       onClick={() => setCategoriaAtiva(cat)}
-                      className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition shadow-sm flex items-center gap-1.5 ${isMiniVulcao ? (isAtiva ? 'bg-gradient-to-r from-amber-500 to-rose-600 text-white ring-2 ring-amber-300 shadow-md scale-105' : 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 animate-pulse') : (isAtiva ? 'bg-pink-600 text-white shadow-md' : 'bg-white text-pink-700 border border-pink-200 hover:bg-pink-100')}`}
+                      className={`whitespace-nowrap px-5 py-2.5 rounded-2xl text-xs font-bold transition shadow-sm flex items-center gap-1.5 ${isMiniVulcao ? (isAtiva ? 'bg-gradient-to-r from-amber-500 to-rose-600 text-white ring-2 ring-amber-300 shadow-md scale-105' : 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 animate-pulse') : (isAtiva ? 'bg-pink-600 text-white shadow-md' : 'bg-white text-pink-700 border border-pink-200 hover:bg-pink-100')}`}
                     >
                       {isMiniVulcao ? '🌋' : cat === 'Mais Vendidos' ? '⭐' : ''} {cat}
                     </button>
@@ -798,7 +776,7 @@ export default function App() {
                   placeholder="🔍 Buscar por sabor (ex: Nutella, Cenoura)..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-pink-200 text-sm bg-white shadow-sm"
+                  className="flex-1 px-5 py-3 rounded-2xl border border-pink-200 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                 />
               </div>
 
@@ -808,62 +786,66 @@ export default function App() {
                 </h2>
               </div>
 
-              {/* VITRINE DE BOLOS COM LAYOUT CORRIGIDO E ELEGANTE */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* VITRINE DE BOLOS COM DESIGN MODERNO E ELEGANTE */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {bolosFiltrados.map((bolo) => (
                   <div
                     key={bolo.id}
-                    className="bg-white rounded-xl shadow p-5 flex flex-col justify-between border border-pink-100 hover:shadow-md transition relative overflow-hidden pt-8"
+                    className="bg-white rounded-3xl p-6 flex flex-col justify-between border border-pink-100/90 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden group"
                   >
                     {bolo.novidade && (
-                      <span className="absolute top-2 left-2 bg-pink-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-full shadow flex items-center gap-1 z-10 animate-pulse">
+                      <span className="absolute top-4 right-4 bg-gradient-to-r from-pink-600 to-rose-600 text-white font-bold text-[10px] px-3 py-1 rounded-full shadow-md flex items-center gap-1 z-10 animate-pulse uppercase tracking-wider">
                         ✨ Novidade
                       </span>
                     )}
 
                     <div>
-                      <div className="flex justify-between items-start gap-2 mb-2">
-                        <h3 className="font-bold text-gray-800 text-lg leading-tight">{bolo.nome}</h3>
-                        <span className="text-pink-700 font-extrabold text-base whitespace-nowrap">
-                          R$ {bolo.preco.toFixed(2).replace('.', ',')}
-                        </span>
+                      <div className="flex justify-between items-start gap-3 mb-2 pr-16">
+                        <h3 className="font-bold text-gray-900 text-lg leading-snug">{bolo.nome}</h3>
                       </div>
 
-                      <span className="inline-block bg-pink-50 text-pink-800 text-[11px] font-semibold px-2.5 py-0.5 rounded-full mb-2">
+                      <span className="inline-block bg-pink-50 text-pink-800 text-[11px] font-semibold px-3 py-1 rounded-full mb-3 border border-pink-100">
                         {bolo.categoria}
                       </span>
 
-                      <p className="text-gray-600 text-xs leading-relaxed mb-4 min-h-[32px]">
+                      <p className="text-gray-600 text-xs leading-relaxed mb-6 min-h-[36px]">
                         {bolo.descricao || "Feito com ingredientes selecionados e muito carinho."}
                       </p>
                     </div>
 
-                    <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                      {isAdmin ? (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditarBolo(bolo)}
-                            className="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => handleDeletarBolo(bolo.id)}
-                            className="bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
-                          >
-                            Excluir
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-gray-400 font-medium">Sob encomenda</span>
-                      )}
+                    <div className="pt-4 border-t border-pink-50 flex items-center justify-between mt-auto">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-gray-400">Preço</span>
+                        <span className="text-pink-700 font-extrabold text-lg">
+                          R$ {bolo.preco.toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
 
-                      <button
-                        onClick={() => adicionarAoCarrinho(bolo)}
-                        className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow flex items-center gap-1.5 ml-auto"
-                      >
-                        <span>🛒</span> Adicionar
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {isAdmin ? (
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => handleEditarBolo(bolo)}
+                              className="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-3 py-2 rounded-xl transition shadow-sm"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => handleDeletarBolo(bolo.id)}
+                              className="bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold px-3 py-2 rounded-xl transition shadow-sm"
+                            >
+                              Excluir
+                            </button>
+                          </div>
+                        ) : null}
+
+                        <button
+                          onClick={() => adicionarAoCarrinho(bolo)}
+                          className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold px-5 py-2.5 rounded-2xl transition shadow-md hover:shadow-lg flex items-center gap-1.5"
+                        >
+                          <span>🛒</span> Adicionar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -872,55 +854,55 @@ export default function App() {
 
             {/* CARRINHO & DADOS DO CLIENTE */}
             {carrinho.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-md p-5 border border-pink-200 sticky top-4">
-                <h3 className="text-lg font-bold text-gray-800 mb-3 border-b pb-2">
-                  🛒 Seu Pedido ({totalItensCarrinho})
+              <div className="bg-white rounded-3xl shadow-xl p-6 border border-pink-200 sticky top-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-3 flex items-center gap-2">
+                  <span>🛒</span> Seu Pedido ({totalItensCarrinho})
                 </h3>
 
-                <div className="space-y-3 max-h-56 overflow-y-auto">
+                <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                   {carrinho.map((item) => (
-                    <div key={item.id} className="bg-pink-50/50 p-3 rounded-xl flex justify-between items-center">
+                    <div key={item.id} className="bg-pink-50/60 p-3.5 rounded-2xl flex justify-between items-center border border-pink-100">
                       <div>
-                        <h4 className="font-bold text-xs">{item.nome}</h4>
-                        <span className="text-xs text-pink-700">R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}</span>
+                        <h4 className="font-bold text-xs text-gray-900">{item.nome}</h4>
+                        <span className="text-xs font-bold text-pink-700">R$ {(item.preco * item.quantidade).toFixed(2).replace('.', ',')}</span>
                       </div>
-                      <div className="flex gap-1 items-center">
-                        <button onClick={() => alterarQuantidade(item.id, -1)} className="px-2 py-0.5 bg-white border rounded font-bold">-</button>
-                        <span className="text-xs font-bold">{item.quantidade}</span>
-                        <button onClick={() => alterarQuantidade(item.id, 1)} className="px-2 py-0.5 bg-white border rounded font-bold">+</button>
+                      <div className="flex gap-1.5 items-center bg-white px-2 py-1 rounded-xl border border-pink-200 shadow-sm">
+                        <button onClick={() => alterarQuantidade(item.id, -1)} className="px-2 text-pink-600 font-bold">-</button>
+                        <span className="text-xs font-bold w-4 text-center">{item.quantidade}</span>
+                        <button onClick={() => alterarQuantidade(item.id, 1)} className="px-2 text-pink-600 font-bold">+</button>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-4 pt-4 border-t space-y-2">
+                <div className="mt-4 pt-4 border-t space-y-3">
                   <input 
                     type="text" 
                     placeholder="Seu Nome Completo *" 
                     value={nomeCliente} 
                     onChange={(e) => setNomeCliente(e.target.value)} 
-                    className="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-pink-500" 
+                    className="w-full text-xs p-3 border border-pink-200 rounded-xl focus:outline-none focus:border-pink-500 bg-pink-50/30" 
                   />
                   <input 
                     type="text" 
                     placeholder="Seu WhatsApp / Telefone (com DDD) *" 
                     value={telefoneCliente} 
                     onChange={(e) => setTelefoneCliente(e.target.value)} 
-                    className="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-pink-500 font-semibold text-pink-700" 
+                    className="w-full text-xs p-3 border border-pink-200 rounded-xl focus:outline-none focus:border-pink-500 font-semibold text-pink-700 bg-pink-50/30" 
                   />
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <div>
                       <label className="block text-[10px] font-bold text-gray-600 mb-1">Data Desejada *</label>
-                      <input type="date" value={dataDesejada} onChange={(e) => setDataDesejada(e.target.value)} className="w-full text-xs p-2 border rounded-lg" />
+                      <input type="date" value={dataDesejada} onChange={(e) => setDataDesejada(e.target.value)} className="w-full text-xs p-2.5 border border-pink-200 rounded-xl bg-pink-50/30" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-gray-600 mb-1">Horário *</label>
-                      <input type="time" value={horarioDesejado} onChange={(e) => setHorarioDesejado(e.target.value)} className="w-full text-xs p-2 border rounded-lg" />
+                      <input type="time" value={horarioDesejado} onChange={(e) => setHorarioDesejado(e.target.value)} className="w-full text-xs p-2.5 border border-pink-200 rounded-xl bg-pink-50/30" />
                     </div>
                   </div>
 
-                  <button onClick={processarCheckout} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs mt-3 shadow flex items-center justify-center gap-2">
+                  <button onClick={processarCheckout} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl text-xs mt-3 shadow-lg flex items-center justify-center gap-2 transition">
                     <span>💬</span> Enviar Pedido via WhatsApp
                   </button>
                 </div>
