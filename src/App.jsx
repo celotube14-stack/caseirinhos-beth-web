@@ -884,9 +884,9 @@ export default function App() {
               </div>
             </div>
 
-            {/* CARRINHO & DADOS DO CLIENTE COM ENDEREÇO E WHATSAPP */}
+            {/* CARRINHO & DADOS DO CLIENTE COM ENDEREÇO E WHATSAPP (AGORA ROLÁVEL NO COMPUTADOR) */}
             {carrinho.length > 0 && (
-              <div ref={carrinhoRef} className="bg-white rounded-3xl shadow-xl p-6 border border-pink-200 sticky top-4">
+              <div ref={carrinhoRef} className="bg-white rounded-3xl shadow-xl p-6 border border-pink-200 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
                 <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-3 flex items-center gap-2">
                   <span>🛒</span> Seu Pedido ({totalItensCarrinho})
                 </h3>
