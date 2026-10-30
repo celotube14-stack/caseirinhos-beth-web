@@ -119,11 +119,10 @@ export default function App() {
       const aberta = horaAtual >= 8 && horaAtual < 21;
       setLojaAberta(aberta);
 
-      // Se a data ainda não foi preenchida pelo cliente
       if (!dataDesejada) {
         const amanha = new Date();
         if (!aberta) {
-          amanha.setDate(amanha.getDate() + 1); // Sugere o dia seguinte se estiver fechado
+          amanha.setDate(amanha.getDate() + 1);
         }
         setDataDesejada(amanha.toISOString().split('T')[0]);
       }
@@ -352,7 +351,6 @@ export default function App() {
     });
     exibirToast(`"${bolo.nome}" adicionado ao pedido!`);
 
-    // Rolar automaticamente para o carrinho/formulário ao adicionar
     setTimeout(() => {
       if (carrinhoRef.current) {
         carrinhoRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -448,7 +446,6 @@ export default function App() {
   const enviarPedidoWhatsApp = () => {
     const totalPedido = calcularTotal();
     
-    // Grava no Firestore em segundo plano sem bloquear
     addDoc(collection(db, "orders"), {
       cliente: nomeCliente,
       telefone: telefoneCliente,
@@ -515,10 +512,11 @@ export default function App() {
       mensagem += `\n*Observações:* ${observacoes}\n`;
     }
 
-    const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(mensagem)}`;
+    // Usando o formato padrão universal do WhatsApp compatível com mobile e desktop
+    const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
     
     setMostrarModalPix(false);
-    window.location.href = url;
+    window.open(url, '_blank');
   };
 
   const categorias = [
