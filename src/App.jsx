@@ -512,11 +512,12 @@ export default function App() {
       mensagem += `\n*Observações:* ${observacoes}\n`;
     }
 
-    // Usando o formato padrão universal do WhatsApp compatível com mobile e desktop
     const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
     
     setMostrarModalPix(false);
-    window.open(url, '_blank');
+    
+    // Solução sênior mobile: alteração direta de location.href para garantir abertura correta
+    window.location.href = url;
   };
 
   const categorias = [
@@ -728,7 +729,7 @@ export default function App() {
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="font-bold text-gray-800 text-base">{cli.nome}</h4>
                               <a 
-                                href={`https://api.whatsapp.com/send?phone=55${cli.telefone.replace(/\D/g, '')}&text=Olá%20${encodeURIComponent(cli.nome)}!%20Tudo%20bem?`} 
+                                href={`https://wa.me/55${cli.telefone.replace(/\D/g, '')}?text=Olá%20${encodeURIComponent(cli.nome)}!%20Tudo%20bem?`} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md transition"
