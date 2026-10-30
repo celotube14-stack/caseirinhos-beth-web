@@ -22,6 +22,9 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [loadingInicial, setLoadingInicial] = useState(true);
 
+  // Estado para mostrar o botão de voltar ao topo
+  const [mostrarBotaoTopo, setMostrarBotaoTopo] = useState(false);
+
   // Referências para rolagem suave
   const cardapioRef = useRef(null);
   const carrinhoRef = useRef(null);
@@ -80,6 +83,23 @@ export default function App() {
 
   const NUMERO_WHATSAPP = "5511996808580"; 
   const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
+
+  // Monitorar scroll para exibir o botão de voltar ao topo
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setMostrarBotaoTopo(true);
+      } else {
+        setMostrarBotaoTopo(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const voltarAoTopo = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Loading de abertura
   useEffect(() => {
@@ -884,7 +904,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* CARRINHO & DADOS DO CLIENTE COM ENDEREÇO E WHATSAPP (AGORA ROLÁVEL NO COMPUTADOR) */}
+            {/* CARRINHO & DADOS DO CLIENTE */}
             {carrinho.length > 0 && (
               <div ref={carrinhoRef} className="bg-white rounded-3xl shadow-xl p-6 border border-pink-200 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
                 <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-3 flex items-center gap-2">
@@ -1046,6 +1066,17 @@ export default function App() {
           </div>
         </main>
       </div>
+
+      {/* BOTÃO FLUTUANTE DE VOLTAR AO TOPO (MOBILE E DESKTOP) */}
+      {mostrarBotaoTopo && (
+        <button
+          onClick={voltarAoTopo}
+          className="fixed bottom-20 right-4 z-40 bg-pink-600 hover:bg-pink-700 text-white w-12 h-12 rounded-full shadow-2xl flex items-center justify-center border-2 border-white transition-all transform hover:scale-110 active:scale-95"
+          title="Voltar ao topo"
+        >
+          <span className="text-xl font-bold">⬆️</span>
+        </button>
+      )}
 
       {/* MODAL DO PIX ANTECIPADO */}
       {mostrarModalPix && (
