@@ -112,15 +112,26 @@ export default function App() {
     return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
   };
 
+  // Checar horário e sugerir data para o dia seguinte se estiver fechado
   useEffect(() => {
     const checarHorario = () => {
       const horaAtual = new Date().getHours();
-      setLojaAberta(horaAtual >= 8 && horaAtual < 21);
+      const aberta = horaAtual >= 8 && horaAtual < 21;
+      setLojaAberta(aberta);
+
+      // Se a data ainda não foi preenchida pelo cliente
+      if (!dataDesejada) {
+        const amanha = new Date();
+        if (!aberta) {
+          amanha.setDate(amanha.getDate() + 1); // Sugere o dia seguinte se estiver fechado
+        }
+        setDataDesejada(amanha.toISOString().split('T')[0]);
+      }
     };
     checarHorario();
     const interval = setInterval(checarHorario, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [dataDesejada]);
 
   // Escutar produtos (Bolos) com expiração de 15 dias para novidades
   useEffect(() => {
@@ -507,8 +518,6 @@ export default function App() {
     const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(mensagem)}`;
     
     setMostrarModalPix(false);
-    
-    // Usar window.location.href para garantir o redirecionamento imediato no mobile e desktop sem bloqueadores
     window.location.href = url;
   };
 
@@ -593,10 +602,12 @@ export default function App() {
             <p className="mt-3 text-pink-900/80 text-sm md:text-base font-semibold tracking-wider">
               Bolos Caseiros e Especiais | Feitos com amor
             </p>
-            <span className={`inline-flex items-center gap-2 mt-3 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${lojaAberta ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'}`}>
-              <span className={`w-2 h-2 rounded-full ${lojaAberta ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-              {lojaAberta ? 'Aberto Agora (08:00 às 21:00)' : 'Fechado no momento'}
-            </span>
+            <div className="flex flex-col items-center gap-1 mt-3">
+              <span className={`inline-flex items-center gap-2 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${lojaAberta ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-900 border-amber-300'}`}>
+                <span className={`w-2 h-2 rounded-full ${lojaAberta ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                {lojaAberta ? 'Aberto Agora (08:00 às 21:00)' : 'Fora do horário — Encomende para amanhã! 🌙'}
+              </span>
+            </div>
           </div>
         </header>
 
