@@ -426,28 +426,8 @@ export default function App() {
     return true;
   };
 
-  const processarCheckout = () => {
-    if (!validarFormulario()) return;
-
-    if (formaPagamento === 'Pix') {
-      setTempoRestante(300);
-      setMostrarModalPix(true);
-    } else {
-      enviarPedidoWhatsApp();
-    }
-  };
-
-  const copiarChavePix = () => {
-    navigator.clipboard.writeText(CHAVE_PIX);
-    setChaveCopiada(true);
-    setTimeout(() => setChaveCopiada(false), 3000);
-  };
-
-  // REDIRECIONAMENTO DE ALTA COMPATIBILIDADE MOBILE/DESKTOP
-  const enviarPedidoWhatsApp = () => {
+  const salvarPedidoFirestore = () => {
     const totalPedido = calcularTotal();
-    
-    // Grava no Firestore em background (não assíncrono para a UI)
     addDoc(collection(db, "orders"), {
       cliente: nomeCliente,
       telefone: telefoneCliente,
@@ -470,11 +450,14 @@ export default function App() {
     }).catch((e) => {
       console.error("Erro ao gravar pedido no Firestore:", e);
     });
+  };
 
+  const gerarMensagemWhatsApp = () => {
+    const totalPedido = calcularTotal();
     let mensagem = `*Novo Pedido (Sob Encomenda) - Caseirinhos da Beth*\n\n`;
     mensagem += `*Cliente:* ${nomeCliente}\n`;
     mensagem += `*WhatsApp:* ${telefoneCliente}\n`;
-    mensagem += `*Data para Encomenda:* ${dataDesejada.split('-').reverse().join('/')} às ${horarioDesejado}\n`;
+    mensagem += `*Data para Encomenda:* ${dataDesejada ? dataDesejada.split('-').reverse().join('/') : ''} às ${horarioDesejado}\n`;
     mensagem += `*Forma:* ${formaEntrega === 'entrega' ? 'Entrega (Redondezas)' : 'Retirada no local'}\n`;
     
     if (formaEntrega === 'entrega') {
@@ -514,25 +497,26 @@ export default function App() {
       mensagem += `\n*Observações:* ${observacoes}\n`;
     }
 
-    // URL Universal do WhatsApp
-    const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(mensagem)}`;
-    
-    setMostrarModalPix(false);
+    return mensagem;
+  };
 
-    // Método infalível para contornar o bloqueador do Android/iOS:
-    // Cria um elemento <a> temporário no DOM e força o evento de clique físico.
-    const link = document.createElement('a');
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const processarCheckout = () => {
+    if (!validarFormulario()) return;
 
-    // Fallback garantido caso o navegador ignore o clique sintético no elemento <a>
-    setTimeout(() => {
-      window.location.assign(url);
-    }, 300);
+    if (formaPagamento === 'Pix') {
+      setTempoRestante(300);
+      setMostrarModalPix(true);
+    } else {
+      salvarPedidoFirestore();
+      const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(gerarMensagemWhatsApp())}`;
+      window.location.href = url;
+    }
+  };
+
+  const copiarChavePix = () => {
+    navigator.clipboard.writeText(CHAVE_PIX);
+    setChaveCopiada(true);
+    setTimeout(() => setChaveCopiada(false), 3000);
   };
 
   const categorias = [
@@ -1088,12 +1072,18 @@ export default function App() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <button
-                onClick={enviarPedidoWhatsApp}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-xl transition shadow"
+              <a
+                href={`https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(gerarMensagemWhatsApp())}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  salvarPedidoFirestore();
+                  setMostrarModalPix(false);
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-3.5 rounded-xl transition shadow text-center block"
               >
                 Já paguei, Enviar Pedido no WhatsApp ✅
-              </button>
+              </a>
               <button
                 onClick={() => setMostrarModalPix(false)}
                 className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-2 rounded-xl transition"
