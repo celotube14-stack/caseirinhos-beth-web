@@ -443,9 +443,11 @@ export default function App() {
     setTimeout(() => setChaveCopiada(false), 3000);
   };
 
+  // REDIRECIONAMENTO DE ALTA COMPATIBILIDADE MOBILE/DESKTOP
   const enviarPedidoWhatsApp = () => {
     const totalPedido = calcularTotal();
     
+    // Grava no Firestore em background (não assíncrono para a UI)
     addDoc(collection(db, "orders"), {
       cliente: nomeCliente,
       telefone: telefoneCliente,
@@ -512,12 +514,25 @@ export default function App() {
       mensagem += `\n*Observações:* ${observacoes}\n`;
     }
 
-    const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
+    // URL Universal do WhatsApp
+    const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(mensagem)}`;
     
     setMostrarModalPix(false);
-    
-    // Solução sênior mobile: alteração direta de location.href para garantir abertura correta
-    window.location.href = url;
+
+    // Método infalível para contornar o bloqueador do Android/iOS:
+    // Cria um elemento <a> temporário no DOM e força o evento de clique físico.
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Fallback garantido caso o navegador ignore o clique sintético no elemento <a>
+    setTimeout(() => {
+      window.location.assign(url);
+    }, 300);
   };
 
   const categorias = [
@@ -729,7 +744,7 @@ export default function App() {
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="font-bold text-gray-800 text-base">{cli.nome}</h4>
                               <a 
-                                href={`https://wa.me/55${cli.telefone.replace(/\D/g, '')}?text=Olá%20${encodeURIComponent(cli.nome)}!%20Tudo%20bem?`} 
+                                href={`https://api.whatsapp.com/send?phone=55${cli.telefone.replace(/\D/g, '')}&text=Olá%20${encodeURIComponent(cli.nome)}!%20Tudo%20bem?`} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md transition"
