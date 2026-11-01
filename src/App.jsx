@@ -611,10 +611,10 @@ export default function App() {
           )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
-            {/* LOGO DA EMPRESA COM URL ENCODING PARA EVITAR BUGS COM ESPAÇOS */}
+            {/* LOGO DA EMPRESA */}
             <div className="flex flex-col items-center justify-center">
               <img 
-                src="/logo%20caseirnhos%20da%20beth.jpg" 
+                src="/logo.png" 
                 alt="Caseirinhos da Beth" 
                 className="h-28 md:h-36 mx-auto drop-shadow-sm select-none object-contain mb-1"
                 onError={(e) => {
