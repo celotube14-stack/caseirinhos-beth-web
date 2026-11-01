@@ -595,7 +595,7 @@ export default function App() {
           </div>
         )}
 
-        <header className="bg-amber-50/90 text-center py-10 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
+        <header className="bg-amber-50/90 text-center py-8 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
           {isAdmin ? (
             <div className="absolute top-3 right-4 z-10 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-full border border-pink-200 shadow-sm">
               <span className="text-xs font-bold text-pink-700">Admin Ativo</span>
@@ -611,14 +611,14 @@ export default function App() {
           )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
-            <h1 className="text-5xl md:text-6xl font-normal leading-tight tracking-wide drop-shadow-sm select-none" style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}>
-              Caseirinhos
-            </h1>
-            <div className="flex items-center justify-center gap-2 -mt-3 relative">
-              <span className="text-2xl md:text-3xl" style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}>da</span>
-              <span className="text-5xl md:text-6xl text-rose-700" style={{ fontFamily: "'Pacifico', cursive" }}>Beth</span>
-            </div>
-            <p className="mt-3 text-pink-900/80 text-sm md:text-base font-semibold tracking-wider">
+            {/* LOGO DA EMPRESA */}
+            <img 
+              src="/logo.png" 
+              alt="Caseirinhos da Beth" 
+              className="h-28 md:h-36 mx-auto drop-shadow-sm select-none object-contain mb-1" 
+            />
+
+            <p className="text-pink-900/80 text-sm md:text-base font-semibold tracking-wider">
               Bolos Caseiros e Especiais | Feitos com amor
             </p>
 
@@ -753,7 +753,7 @@ export default function App() {
               {abaAdmin === 'clientes' && (
                 <div>
                   <h3 className="font-bold text-gray-800 text-lg mb-2">Lista de Contatos dos Clientes</h3>
-                  <p className="text-xs text-gray-500 mb-4">Aqui estão reunidos todos os clientes que já fizeram pedidos no site.</p>
+                  <p className="text-xs text-gray-500 mb-4">Aqui estão reunidos todos los clientes que já fizeram pedidos no site.</p>
                   
                   {listaClientes.length === 0 ? (
                     <p className="text-gray-500 text-xs text-center py-6">Nenhum cliente cadastrado ainda.</p>
@@ -1084,7 +1084,7 @@ export default function App() {
         </main>
       </div>
 
-      {/* BOTÃO FLUTUANTE DE VOLTAR AO TOPO (MOBILE E DESKTOP) */}
+      {/* BOTÃO FLUTUANTE DE VOLTAR AO TOPO */}
       {mostrarBotaoTopo && (
         <button
           onClick={voltarAoTopo}
