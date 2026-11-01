@@ -83,6 +83,7 @@ export default function App() {
 
   const NUMERO_WHATSAPP = "5511996808580"; 
   const CHAVE_PIX = "b765a02d-19ad-4eae-8c5c-da574b0c2b9b";
+  const INSTAGRAM_URL = "https://instagram.com/caseirinhosdabeth"; // Altere aqui se o link for diferente
 
   // Monitorar scroll para exibir o botão de voltar ao topo
   useEffect(() => {
@@ -620,6 +621,19 @@ export default function App() {
             <p className="mt-3 text-pink-900/80 text-sm md:text-base font-semibold tracking-wider">
               Bolos Caseiros e Especiais | Feitos com amor
             </p>
+
+            {/* INSTAGRAM DESTAQUE NO TOPO */}
+            <div className="mt-3">
+              <a 
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md hover:opacity-95 transition transform hover:scale-105"
+              >
+                <span>📸</span> @caseirinhosdabeth
+              </a>
+            </div>
+
             <div className="flex flex-col items-center gap-1 mt-3">
               <span className={`inline-flex items-center gap-2 text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${lojaAberta ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-900 border-amber-300'}`}>
                 <span className={`w-2 h-2 rounded-full ${lojaAberta ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
