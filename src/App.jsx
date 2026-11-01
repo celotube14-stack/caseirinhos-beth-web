@@ -44,7 +44,7 @@ export default function App() {
   const [nomeForm, setNomeForm] = useState('');
   const [precoForm, setPrecoForm] = useState('');
   const [categoriaForm, setCategoriaForm] = useState('Bolos Tradicionais');
-  const [descricaoForm, setDescdescricaoForm] = useState('');
+  const [descricaoForm, setDescricaoForm] = useState('');
   const [destaqueForm, setDestaqueForm] = useState(false);
   const [novidadeForm, setNovidadeForm] = useState(false);
   const [novidadeDataForm, setNovidadeDataForm] = useState(null);
@@ -595,7 +595,7 @@ export default function App() {
           </div>
         )}
 
-        <header className="bg-amber-50/90 text-center py-8 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
+        <header className="bg-amber-50/90 text-center py-6 px-4 shadow-sm border-b border-pink-100 relative overflow-hidden">
           {isAdmin ? (
             <div className="absolute top-3 right-4 z-10 flex items-center gap-2 bg-white/90 px-3 py-1 rounded-full border border-pink-200 shadow-sm">
               <span className="text-xs font-bold text-pink-700">Admin Ativo</span>
@@ -611,12 +611,12 @@ export default function App() {
           )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
-            {/* LOGO DA EMPRESA AINDA MAIOR */}
+            {/* LOGO DA EMPRESA COM TAMANHO AMPLIADO PARA PREENCHER O ESPAÇO */}
             <div className="flex flex-col items-center justify-center">
               <img 
                 src="/logo.svg" 
                 alt="Caseirinhos da Beth" 
-                className="h-52 md:h-64 mx-auto drop-shadow-sm select-none object-contain mb-1"
+                className="w-80 md:w-[420px] mx-auto drop-shadow-sm select-none object-contain mb-1"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   if (e.target.nextElementSibling) {
