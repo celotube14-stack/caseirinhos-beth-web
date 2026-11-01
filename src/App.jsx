@@ -44,7 +44,7 @@ export default function App() {
   const [nomeForm, setNomeForm] = useState('');
   const [precoForm, setPrecoForm] = useState('');
   const [categoriaForm, setCategoriaForm] = useState('Bolos Tradicionais');
-  const [descricaoForm, setDescricaoForm] = useState('');
+  const [descricaoForm, setDescdescricaoForm] = useState('');
   const [destaqueForm, setDestaqueForm] = useState(false);
   const [novidadeForm, setNovidadeForm] = useState(false);
   const [novidadeDataForm, setNovidadeDataForm] = useState(null);
@@ -611,12 +611,12 @@ export default function App() {
           )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
-            {/* LOGO DA EMPRESA MAIOR */}
+            {/* LOGO DA EMPRESA AINDA MAIOR */}
             <div className="flex flex-col items-center justify-center">
               <img 
                 src="/logo.svg" 
                 alt="Caseirinhos da Beth" 
-                className="h-40 md:h-52 mx-auto drop-shadow-sm select-none object-contain mb-1"
+                className="h-52 md:h-64 mx-auto drop-shadow-sm select-none object-contain mb-1"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   if (e.target.nextElementSibling) {
