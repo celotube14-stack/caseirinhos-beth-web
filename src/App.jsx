@@ -611,12 +611,12 @@ export default function App() {
           )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
-            {/* LOGO DA EMPRESA APONTANDO PARA LOGO.SVG */}
+            {/* LOGO DA EMPRESA MAIOR */}
             <div className="flex flex-col items-center justify-center">
               <img 
                 src="/logo.svg" 
                 alt="Caseirinhos da Beth" 
-                className="h-28 md:h-36 mx-auto drop-shadow-sm select-none object-contain mb-1"
+                className="h-40 md:h-52 mx-auto drop-shadow-sm select-none object-contain mb-1"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   if (e.target.nextElementSibling) {
@@ -1143,7 +1143,6 @@ export default function App() {
                 rel="noopener noreferrer"
                 onClick={() => {
                   salvarPedidoFirestore();
-                  setMostrarModalPix>false;
                   setMostrarModalPix(false);
                 }}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-3.5 rounded-xl transition shadow text-center block"
