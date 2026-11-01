@@ -611,14 +611,31 @@ export default function App() {
           )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
-            {/* LOGO DA EMPRESA */}
-            <img 
-              src="/logo.png" 
-              alt="Caseirinhos da Beth" 
-              className="h-28 md:h-36 mx-auto drop-shadow-sm select-none object-contain mb-1" 
-            />
+            {/* LOGO DA EMPRESA COM FALLBACK AUTOMÁTICO */}
+            <div className="flex flex-col items-center justify-center">
+              <img 
+                src="/logo caseirnhos da beth.jpg" 
+                alt="Caseirinhos da Beth" 
+                className="h-28 md:h-36 mx-auto drop-shadow-sm select-none object-contain mb-1"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  if (e.target.nextElementSibling) {
+                    e.target.nextElementSibling.style.display = 'flex';
+                  }
+                }} 
+              />
+              <div style={{ display: 'none' }} className="flex-col items-center justify-center">
+                <h1 className="text-5xl md:text-6xl font-normal leading-tight tracking-wide drop-shadow-sm select-none" style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}>
+                  Caseirinhos
+                </h1>
+                <div className="flex items-center justify-center gap-2 -mt-3 relative">
+                  <span className="text-2xl md:text-3xl" style={{ fontFamily: "'Pacifico', cursive", color: '#4a1d0d' }}>da</span>
+                  <span className="text-5xl md:text-6xl text-rose-700" style={{ fontFamily: "'Pacifico', cursive" }}>Beth</span>
+                </div>
+              </div>
+            </div>
 
-            <p className="text-pink-900/80 text-sm md:text-base font-semibold tracking-wider">
+            <p className="text-pink-900/80 text-sm md:text-base font-semibold tracking-wider mt-1">
               Bolos Caseiros e Especiais | Feitos com amor
             </p>
 
@@ -753,7 +770,7 @@ export default function App() {
               {abaAdmin === 'clientes' && (
                 <div>
                   <h3 className="font-bold text-gray-800 text-lg mb-2">Lista de Contatos dos Clientes</h3>
-                  <p className="text-xs text-gray-500 mb-4">Aqui estão reunidos todos los clientes que já fizeram pedidos no site.</p>
+                  <p className="text-xs text-gray-500 mb-4">Aqui estão reunidos todos os clientes que já fizeram pedidos no site.</p>
                   
                   {listaClientes.length === 0 ? (
                     <p className="text-gray-500 text-xs text-center py-6">Nenhum cliente cadastrado ainda.</p>
