@@ -614,7 +614,7 @@ export default function App() {
             {/* LOGO DA EMPRESA COM TAMANHO AMPLIADO PARA PREENCHER O ESPAÇO */}
             <div className="flex flex-col items-center justify-center">
               <img 
-                src="/logo2.svg" 
+                src="/logo.png" 
                 alt="Caseirinhos da Beth" 
                 className="w-80 md:w-[420px] mx-auto drop-shadow-sm select-none object-contain mb-1"
                 onError={(e) => {
