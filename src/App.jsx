@@ -545,7 +545,6 @@ export default function App() {
     "Mais Vendidos",
     "Bolos Tradicionais",
     "Bolos Especiais",
-    "Bolos com Cobertura",
     "Mini Bolo Vulcão"
   ];
 
