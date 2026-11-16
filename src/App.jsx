@@ -450,30 +450,28 @@ export default function App() {
   const salvarPedidoFirestore = async () => {
     const totalPedido = calcularTotal();
     try {
-      const docRef = await addDoc(collection(db, "orders"), {
-        cliente: nomeCliente || '',
-        telefone: telefoneCliente || '',
-        dataEncomenda: dataDesejada || '',
-        horarioEncomenda: horarioDesejado || '',
-        formaEntrega: formaEntrega || 'entrega',
+      await addDoc(collection(db, "orders"), {
+        cliente: nomeCliente,
+        telefone: telefoneCliente,
+        dataEncomenda: dataDesejada,
+        horarioEncomenda: horarioDesejado,
+        formaEntrega: formaEntrega,
         cep: cepCliente || '',
         endereco: enderecoCliente || '',
         numero: numeroCliente || '',
         complemento: complementoCliente || '',
-        itens: carrinho || [],
-        subtotal: calcularSubtotal() || 0,
+        itens: carrinho,
+        subtotal: calcularSubtotal(),
         taxaEntrega: formaEntrega === 'entrega' ? VALOR_TAXA_ENTREGA : 0,
-        total: totalPedido || 0,
-        formaPagamento: formaPagamento || 'Pix',
+        total: totalPedido,
+        formaPagamento: formaPagamento,
         trocoPara: precisaTroco || '',
         observacoes: observacoes || '',
         status: 'Pendente',
         dataCriacao: new Date().toISOString()
       });
-      console.log("Pedido salvo com sucesso! ID:", docRef.id);
     } catch (e) {
-      console.error("ERRO DETALHADO DO FIREBASE:", e);
-      alert("FALHA AO SALVAR NO FIREBASE: " + e.message);
+      console.error("Erro ao gravar pedido no Firestore:", e);
     }
   };
 
