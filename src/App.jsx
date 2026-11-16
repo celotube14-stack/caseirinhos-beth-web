@@ -450,7 +450,7 @@ export default function App() {
   const salvarPedidoFirestore = async () => {
     const totalPedido = calcularTotal();
     try {
-      await addDoc(collection(db, "orders"), {
+      const docRef = await addDoc(collection(db, "orders"), {
         cliente: nomeCliente,
         telefone: telefoneCliente,
         dataEncomenda: dataDesejada,
@@ -470,8 +470,10 @@ export default function App() {
         status: 'Pendente',
         dataCriacao: new Date().toISOString()
       });
+      console.log("Pedido salvo com sucesso! ID:", docRef.id);
     } catch (e) {
-      console.error("Erro ao gravar pedido no Firestore:", e);
+      console.error("ERRO DETALHADO DO FIREBASE:", e);
+      alert("FALHA AO SALVAR NO FIREBASE: " + e.message);
     }
   };
 
