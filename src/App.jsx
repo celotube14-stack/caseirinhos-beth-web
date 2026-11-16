@@ -447,30 +447,32 @@ export default function App() {
     return true;
   };
 
-  const salvarPedidoFirestore = () => {
+  const salvarPedidoFirestore = async () => {
     const totalPedido = calcularTotal();
-    addDoc(collection(db, "orders"), {
-      cliente: nomeCliente,
-      telefone: telefoneCliente,
-      dataEncomenda: dataDesejada,
-      horarioEncomenda: horarioDesejado,
-      formaEntrega: formaEntrega,
-      cep: cepCliente || '',
-      endereco: enderecoCliente || '',
-      numero: numeroCliente || '',
-      complemento: complementoCliente || '',
-      itens: carrinho,
-      subtotal: calcularSubtotal(),
-      taxaEntrega: formaEntrega === 'entrega' ? VALOR_TAXA_ENTREGA : 0,
-      total: totalPedido,
-      formaPagamento: formaPagamento,
-      trocoPara: precisaTroco || '',
-      observacoes: observacoes || '',
-      status: 'Pendente',
-      dataCriacao: new Date().toISOString()
-    }).catch((e) => {
+    try {
+      await addDoc(collection(db, "orders"), {
+        cliente: nomeCliente,
+        telefone: telefoneCliente,
+        dataEncomenda: dataDesejada,
+        horarioEncomenda: horarioDesejado,
+        formaEntrega: formaEntrega,
+        cep: cepCliente || '',
+        endereco: enderecoCliente || '',
+        numero: numeroCliente || '',
+        complemento: complementoCliente || '',
+        itens: carrinho,
+        subtotal: calcularSubtotal(),
+        taxaEntrega: formaEntrega === 'entrega' ? VALOR_TAXA_ENTREGA : 0,
+        total: totalPedido,
+        formaPagamento: formaPagamento,
+        trocoPara: precisaTroco || '',
+        observacoes: observacoes || '',
+        status: 'Pendente',
+        dataCriacao: new Date().toISOString()
+      });
+    } catch (e) {
       console.error("Erro ao gravar pedido no Firestore:", e);
-    });
+    }
   };
 
   const gerarMensagemWhatsApp = () => {
@@ -521,14 +523,14 @@ export default function App() {
     return mensagem;
   };
 
-  const processarCheckout = () => {
+  const processarCheckout = async () => {
     if (!validarFormulario()) return;
 
     if (formaPagamento === 'Pix') {
       setTempoRestante(300);
       setMostrarModalPix(true);
     } else {
-      salvarPedidoFirestore();
+      await salvarPedidoFirestore();
       const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(gerarMensagemWhatsApp())}`;
       window.location.href = url;
     }
@@ -610,7 +612,6 @@ export default function App() {
           )}
 
           <div className="max-w-md mx-auto flex flex-col items-center justify-center relative">
-            {/* LOGO DA EMPRESA COM TAMANHO AMPLIADO PARA PREENCHER O ESPAÇO */}
             <div className="flex flex-col items-center justify-center">
               <img 
                 src="/logo.png" 
@@ -638,7 +639,6 @@ export default function App() {
               Bolos Caseiros e Especiais | Feitos com amor
             </p>
 
-            {/* INSTAGRAM ESTILIZADO COM CORES DA PÁGINA */}
             <div className="mt-3">
               <a 
                 href={INSTAGRAM_URL}
@@ -1136,18 +1136,17 @@ export default function App() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <a
-                href={`https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(gerarMensagemWhatsApp())}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  salvarPedidoFirestore();
+              <button
+                onClick={async () => {
+                  await salvarPedidoFirestore();
                   setMostrarModalPix(false);
+                  const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(gerarMensagemWhatsApp())}`;
+                  window.location.href = url;
                 }}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-3.5 rounded-xl transition shadow text-center block"
               >
                 Já paguei, Enviar Pedido no WhatsApp ✅
-              </a>
+              </button>
               <button
                 onClick={() => setMostrarModalPix(false)}
                 className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-2 rounded-xl transition"
